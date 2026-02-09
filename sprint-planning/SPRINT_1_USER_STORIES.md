@@ -172,66 +172,67 @@ Design and implement PostgreSQL schema for prospects with all measurables, stats
 
 ---
 
-## US-005: Data Ingestion from NFL.com
+## US-005: Web Scraper for NFL.com Prospect Data
 
 ### User Story
 As a **data engineer**  
-I want to **ingest prospect data from NFL.com**  
-So that **the database has current prospect information**
+I want to **scrape prospect data from NFL.com's public Combine and Draft pages**  
+So that **the database has current prospect information updated daily**
 
 ### Description
-Build data connector to fetch prospect data from NFL.com and load into database daily. Implements robust ETL pipeline with validation, error handling, and automated scheduling.
+Build web scraper to extract prospect data from NFL.com public pages (Combine results, Draft tracker). Scraper runs daily, validates data, deduplicates, and loads into database. Includes error handling and fallback caching.
 
 ### Acceptance Criteria
-- [ ] Connector fetches from NFL.com API or website (respectful rate limiting)
-- [ ] Extracts all prospect fields: name, position, college, height, weight, measurables, draft grade
-- [ ] Data validation enforces: required fields present, correct data types, realistic ranges
-- [ ] Duplicate detection by name + position + college combination
-- [ ] Idempotent updates: existing records updated, new records inserted
-- [ ] Complete audit trail: logs all loads with record counts, timestamps, source
-- [ ] Error logging with full stack traces for debugging
-- [ ] Handles API failures gracefully with exponential backoff retry (max 3 attempts)
-- [ ] Staging table validates data before production load
-- [ ] Transaction rollback on critical validation failure
-- [ ] Load completes in < 5 minutes for full dataset
-- [ ] Email alert on load failures
+- [ ] Scraper extracts from NFL.com Combine results and Draft tracker pages
+- [ ] Extracts: name, position, college, height, weight, 40-time, vertical, broad jump
+- [ ] Handles missing data gracefully (partial records)
+- [ ] Deduplicates prospects (same player may appear multiple times)
+- [ ] Data validation (heights/weights within realistic ranges, 40-time > 4.0s)
+- [ ] Respects rate limiting (1-2s delays between requests)
+- [ ] Proper User-Agent headers (mimics browser)
+- [ ] Logs all successful scrapes and errors
+- [ ] Fallback to yesterday's data if scrape fails
+- [ ] Tests with sample HTML fixtures
+- [ ] Complies with robots.txt and legal/ethical guidelines
+- [ ] Load completes in < 5 minutes
 
 ### Technical Acceptance Criteria
-- [ ] Python 3.9+ script with type hints
-- [ ] Requests/httpx library for HTTP calls with connection pooling
-- [ ] Pydantic or similar for schema validation
-- [ ] Batch insert with SQLAlchemy ORM or raw SQL
-- [ ] Logging configured with rotating file handlers
-- [ ] Database transactions for atomicity
-- [ ] Connection pooling for efficiency
-- [ ] Memory efficient (stream processing for large datasets)
-- [ ] Unit tests for validation logic (90%+ coverage)
-- [ ] Integration test with test database
-- [ ] APScheduler or similar for daily scheduling
-- [ ] Load metrics tracked (records inserted, updated, skipped, errors)
+- [ ] BeautifulSoup4 for HTML parsing
+- [ ] Requests library with User-Agent rotation
+- [ ] Tenacity for retry logic (exponential backoff)
+- [ ] Pydantic for data validation
+- [ ] Fuzzy matching for duplicate detection (rapidfuzz or similar)
+- [ ] Structured logging with timestamps
+- [ ] Unit tests with mocked HTML fixtures (90%+ coverage)
+- [ ] Database transaction handling for atomicity
+- [ ] Cache layer for fallback data
+- [ ] APScheduler integration for daily execution
 
 ### Tasks
-- **Data:** Analyze NFL.com data structure and API endpoints
-- **Data:** Design extraction logic with error handling and retries
-- **Data:** Build data validation and schema enforcement
-- **Data:** Implement duplicate detection algorithm
-- **Data:** Create idempotent upsert logic (insert or update)
-- **Data:** Build comprehensive logging system
-- **Backend:** Create staging table schema
-- **Backend:** Implement database transaction management
-- **Backend:** Set up APScheduler for daily execution
-- **Data:** Write unit tests for validation
-- **Data:** Create integration tests with test database
-- **Data:** Document data extraction and transformation logic
+- **Data:** Analyze NFL.com page structure and HTML layout
+- **Data:** Build BeautifulSoup scraper for Combine results
+- **Data:** Build scraper for Draft tracker pages
+- **Data:** Create HTML test fixtures (sample pages)
+- **Data:** Implement deduplication logic (fuzzy matching)
+- **Data:** Implement data validation framework
+- **Data:** Build fallback caching mechanism
+- **Data:** Write comprehensive unit tests
+- **Backend:** Integrate into pipeline and scheduler
+- **Backend:** Create staging and cache tables
 
 ### Definition of Done
-- [ ] Connector successfully fetches and validates data from NFL.com
-- [ ] Data loads consistently with zero data loss
-- [ ] Errors logged and tracked
-- [ ] All tests passing (unit and integration)
-- [ ] Monitoring and alerts configured
-- [ ] Documentation with troubleshooting guide
-- [ ] Code reviewed and approved
+- [ ] Scraper extracts all required fields
+- [ ] Data validated and deduplicated
+- [ ] Tests passing (90%+ coverage)
+- [ ] Error handling verified
+- [ ] Fallback caching working
+- [ ] Logs clear and actionable
+- [ ] Documentation complete (see ADR-0009)
+
+### Notes
+- Reference ADR-0009 for data sourcing strategy and legal/ethical considerations
+- Yahoo Sports scraper planned for Sprint 2 if additional data needed
+- ESPN injury reports planned for Sprint 3
 
 ### Effort
 - **Data:** 7 story points

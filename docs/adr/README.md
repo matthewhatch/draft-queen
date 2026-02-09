@@ -16,6 +16,7 @@ This directory contains Architecture Decision Records documenting major design d
 | [0006](#adr-0006-deployment) | Deployment Strategy - Single Containerized Instance | ✅ Accepted | DevOps |
 | [0007](#adr-0007-monitoring) | Monitoring & Observability - Prometheus + Dashboard | ✅ Accepted | Operations |
 | [0008](#adr-0008-export-formats) | Data Export Formats - JSON, CSV, Parquet | ✅ Accepted | Data |
+| [0009](#adr-0009-data-sourcing) | Data Sourcing Strategy - Public Web Scrapers | ✅ Accepted | Data |
 
 ## Detailed ADR Summaries
 
@@ -233,6 +234,56 @@ This directory contains Architecture Decision Records documenting major design d
 **File:** [0008-export-formats.md](0008-export-formats.md)
 
 **Decision:** Support JSON, CSV, and Parquet export formats.
+
+**Key Points:**
+- **CSV** → Spreadsheet analysis (Excel), sharing with non-technical users
+- **JSON** → Python/JavaScript processing, API integration, nested data, type preservation
+- **Parquet** → Big data tools (DuckDB, Polars, cloud warehouses), columnar compression
+
+**Why This Matters:** Analysts use different downstream tools; supporting multiple formats removes friction.
+
+**Trade-offs:**
+- **Plus:** Flexibility, compatibility, performance optimization by format
+- **Minus:** Three formats to maintain and test
+
+**Alternatives Rejected:**
+- Excel (.xlsx) - verbose, limited for large exports
+- XML - outdated
+- Protocol Buffers - requires specialized tooling
+
+---
+
+### ADR 0009: Data Sourcing Strategy - Public Web Scrapers
+
+**File:** [0009-data-sourcing.md](0009-data-sourcing.md)
+
+**Decision:** Build web scrapers for public sources (NFL.com, Yahoo Sports) instead of relying on non-existent official APIs.
+
+**Key Points:**
+- **Phase 1 (Sprint 1):** NFL.com Combine and Draft tracker scraper
+- **Phase 2 (Sprint 2):** Yahoo Sports scraper for additional metrics
+- **Phase 3 (Sprint 3):** ESPN for injury reports
+- **Robustness:** User-Agent rotation, rate limiting, retry logic, fallback caching
+- **Legal:** Respectful scraping of public data; internal use; compliant with robots.txt
+
+**Why This Matters:** Enables data-driven platform without external partnerships or licensing. MVP timeline feasible with scraping.
+
+**Trade-offs:**
+- **Plus:** No API dependency, current data, public information, cost-free
+- **Minus:** Fragility (breaks on site changes), maintenance burden, legal gray area
+
+**Legal Considerations:**
+- Public data; internal use; respectful rate limiting
+- Risk acceptable for MVP
+- Migration path to official partnerships for 2.0
+
+**Alternatives Rejected:**
+- Official NFL API - not publicly available
+- Manual data entry - not viable for 2,000+ prospects
+- Crowdsourced data - too slow for MVP
+- Data vendors (PFF) - expensive, not justified for MVP
+
+---
 
 **Key Points:**
 - **CSV** → Spreadsheet analysis (Excel), sharing with non-technical users
