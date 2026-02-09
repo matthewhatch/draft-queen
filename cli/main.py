@@ -8,6 +8,8 @@ import yaml
 
 from cli.client import APIClient
 from cli.commands.pipeline import pipeline
+from cli.commands.prospects import prospects
+from cli.commands.history import history
 
 
 class CliContext:
@@ -84,6 +86,8 @@ def cli(ctx, config, api_url, verbose):
 
 # Register command groups
 cli.add_command(pipeline)
+cli.add_command(prospects)
+cli.add_command(history)
 
 
 @cli.command()
