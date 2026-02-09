@@ -10,6 +10,7 @@ from cli.client import APIClient
 from cli.commands.pipeline import pipeline
 from cli.commands.prospects import prospects
 from cli.commands.history import history
+from cli.commands.quality import quality
 
 
 class CliContext:
@@ -88,6 +89,7 @@ def cli(ctx, config, api_url, verbose):
 cli.add_command(pipeline)
 cli.add_command(prospects)
 cli.add_command(history)
+cli.add_command(quality)
 
 
 @cli.command()
