@@ -217,7 +217,9 @@ class ProspectStatValidator:
                         errors.append(error)
 
                     # Check position-specific expectations
-                    if position in cls.POSITION_STAT_EXPECTATIONS:
+                    if position in cls.POSITION_STAT_EXPECTATIONS and isinstance(
+                        stat_value, (int, float)
+                    ):
                         position_expectations = cls.POSITION_STAT_EXPECTATIONS[position]
 
                         if stat_field in position_expectations:
