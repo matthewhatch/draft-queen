@@ -11,6 +11,9 @@ from cli.commands.pipeline import pipeline
 from cli.commands.prospects import prospects
 from cli.commands.history import history
 from cli.commands.quality import quality
+from cli.commands.config import config
+from cli.commands.auth import auth
+from cli.commands.admin import health, db
 
 
 class CliContext:
@@ -90,6 +93,10 @@ cli.add_command(pipeline)
 cli.add_command(prospects)
 cli.add_command(history)
 cli.add_command(quality)
+cli.add_command(config)
+cli.add_command(auth)
+cli.add_command(health)
+cli.add_command(db)
 
 
 @cli.command()
