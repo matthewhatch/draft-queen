@@ -2,11 +2,16 @@
 
 import logging
 import logging.handlers
+import os
 from pathlib import Path
 from config import settings
 from backend.database import db
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from backend.api.routes import query_router
 
 # Configure logging
 def setup_logging():
@@ -150,9 +155,68 @@ class PipelineScheduler:
 scheduler: PipelineScheduler = None
 
 
+# FastAPI Application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan context manager for startup/shutdown."""
+    # Startup
+    initialize_app()
+    yield
+    # Shutdown
+    shutdown_app()
+
+
+app = FastAPI(
+    title=settings.app_name,
+    description="NFL Draft Prospect Analysis Platform",
+    version=settings.app_version,
+    lifespan=lifespan,
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(query_router)
+
+
+# Health check endpoint
+@app.get("/health", tags=["health"])
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "app": settings.app_name,
+        "version": settings.app_version,
+        "database": "ok" if db.health_check() else "error"
+    }
+
+
+@app.get("/", tags=["root"])
+async def root():
+    """Root endpoint with API documentation link."""
+    return {
+        "message": f"Welcome to {settings.app_name} v{settings.app_version}",
+        "docs": "/docs",
+        "openapi": "/openapi.json"
+    }
+
+
 def initialize_app():
+
     """Initialize application components."""
     global scheduler
+    
+    # Skip initialization if running tests
+    if os.getenv("TESTING") == "true":
+        logger.info("Test mode detected - skipping scheduler initialization")
+        return
     
     logger.info("=" * 80)
     logger.info(f"Initializing {settings.app_name} v{settings.app_version}")

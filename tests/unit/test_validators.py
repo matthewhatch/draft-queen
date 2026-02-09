@@ -1,6 +1,11 @@
 """Unit tests for validation framework."""
 
 import pytest
+import os
+
+# Set testing mode before importing app
+os.environ["TESTING"] = "true"
+
 from data_pipeline.models import ProspectDataSchema
 from data_pipeline.validators import (
     SchemaValidator,
