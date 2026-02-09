@@ -1,6 +1,6 @@
 """Database connection and session management."""
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
@@ -113,7 +113,7 @@ class DatabaseConnection:
         """Check database connectivity."""
         try:
             with self.engine.connect() as connection:
-                connection.execute("SELECT 1")
+                connection.execute(text("SELECT 1"))
             logger.info("Database health check passed")
             return True
         except Exception as e:

@@ -1,6 +1,6 @@
 """Pydantic schemas for API requests and responses."""
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from decimal import Decimal
@@ -137,6 +137,95 @@ class ExportResponse(BaseModel):
             "file_extension": "json",
             "content_type": "application/json",
             "created_at": "2026-02-09T12:00:00Z"
+        }
+    })
+
+
+class FieldStatistics(BaseModel):
+    """Statistics for a single field."""
+    unit: str = Field(description="Unit of measurement")
+    count: int = Field(description="Number of non-null values")
+    min: float = Field(description="Minimum value")
+    max: float = Field(description="Maximum value")
+    average: float = Field(description="Average value")
+    median: float = Field(description="Median value (50th percentile)")
+    percentile_25: float = Field(description="25th percentile")
+    percentile_75: float = Field(description="75th percentile")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "unit": "lbs",
+            "count": 8,
+            "min": 180.0,
+            "max": 320.0,
+            "average": 245.5,
+            "median": 240.0,
+            "percentile_25": 210.0,
+            "percentile_75": 280.0
+        }
+    })
+
+
+class PositionStatisticsResponse(BaseModel):
+    """Position statistics response."""
+    position: str = Field(description="Position code (e.g., QB, RB)")
+    count: int = Field(description="Number of prospects in this position")
+    height: Optional[FieldStatistics] = Field(None, description="Height statistics (feet)")
+    weight: Optional[FieldStatistics] = Field(None, description="Weight statistics (lbs)")
+    draft_grade: Optional[FieldStatistics] = Field(None, description="Draft grade statistics")
+    filters_applied: Optional[dict] = Field(None, description="Filters that were applied")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "position": "QB",
+            "count": 10,
+            "height": {
+                "unit": "feet",
+                "count": 10,
+                "min": 6.0,
+                "max": 6.5,
+                "average": 6.25,
+                "median": 6.25,
+                "percentile_25": 6.1,
+                "percentile_75": 6.4
+            },
+            "weight": {
+                "unit": "lbs",
+                "count": 10,
+                "min": 200.0,
+                "max": 240.0,
+                "average": 220.0,
+                "median": 220.0,
+                "percentile_25": 210.0,
+                "percentile_75": 230.0
+            },
+            "draft_grade": {
+                "unit": "grade",
+                "count": 10,
+                "min": 7.5,
+                "max": 9.5,
+                "average": 8.5,
+                "median": 8.5,
+                "percentile_25": 8.0,
+                "percentile_75": 9.0
+            },
+            "filters_applied": None
+        }
+    })
+
+
+class PositionsSummaryResponse(BaseModel):
+    """Summary of all positions."""
+    positions: Dict[str, dict] = Field(description="Position summary data")
+    total_positions: int = Field(description="Number of positions")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "positions": {
+                "QB": {"count": 10, "height_avg": 6.25, "weight_avg": 220.0, "draft_grade_avg": 8.5},
+                "RB": {"count": 15, "height_avg": 5.9, "weight_avg": 205.0, "draft_grade_avg": 7.8}
+            },
+            "total_positions": 2
         }
     })
 

@@ -1,6 +1,6 @@
 """FastAPI routes for prospect queries."""
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Body, Response
+from fastapi import APIRouter, Depends, Query, HTTPException, Body, Response, Path
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import logging
@@ -8,15 +8,20 @@ from datetime import datetime
 from typing import Optional
 
 from backend.database import db
-from backend.api.schemas import QueryFilterSchema, QueryResultSchema, RangeFilter, ExportRequest, ExportResponse
+from backend.api.schemas import (
+    QueryFilterSchema, QueryResultSchema, RangeFilter, ExportRequest, ExportResponse,
+    PositionStatisticsResponse, PositionsSummaryResponse
+)
 from backend.api.query_service import QueryService
 from backend.api.export_service import ExportService, ExportFormat
+from backend.api.analytics_service import AnalyticsService
 
 logger = logging.getLogger(__name__)
 
 # Create router
 query_router = APIRouter(prefix="/api/prospects", tags=["prospects"])
 export_router = APIRouter(prefix="/api/exports", tags=["exports"])
+analytics_router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
 
 @query_router.post(
@@ -234,7 +239,7 @@ async def export_prospects(
     description="Quick export without request body"
 )
 async def quick_export(
-    format_name: str = Query(..., description="Export format: json, jsonl, csv, parquet"),
+    format_name: str = Path(..., description="Export format: json, jsonl, csv, parquet"),
     position: Optional[str] = Query(None, description="Filter by position"),
     college: Optional[str] = Query(None, description="Filter by college"),
     skip: int = Query(0, ge=0, description="Records to skip"),
@@ -299,4 +304,85 @@ async def quick_export(
         raise HTTPException(
             status_code=500,
             detail=f"Export failed: {str(e)}"
+        )
+
+
+# ============================================================================
+# Analytics Routes
+# ============================================================================
+
+@analytics_router.get(
+    "/positions/{position}",
+    response_model=PositionStatisticsResponse,
+    summary="Get position statistics",
+    description="Get aggregated statistics for a specific position including averages, min/max, and percentiles"
+)
+async def get_position_stats(
+    position: str = Path(..., description="Position code (e.g., QB, RB, WR)"),
+    college: Optional[str] = Query(None, description="Filter by college"),
+    height_min: Optional[float] = Query(None, ge=4.0, le=7.0, description="Minimum height (feet)"),
+    height_max: Optional[float] = Query(None, ge=4.0, le=7.0, description="Maximum height (feet)"),
+    weight_min: Optional[int] = Query(None, ge=100, le=400, description="Minimum weight (lbs)"),
+    weight_max: Optional[int] = Query(None, ge=100, le=400, description="Maximum weight (lbs)"),
+    draft_grade_min: Optional[float] = Query(None, ge=5.0, le=10.0, description="Minimum draft grade"),
+    draft_grade_max: Optional[float] = Query(None, ge=5.0, le=10.0, description="Maximum draft grade"),
+    db: Session = Depends(db.get_session)
+):
+    """Get aggregated statistics for a specific position."""
+    try:
+        # Build filters from query parameters
+        filters = QueryFilterSchema(
+            position=position,
+            college=college,
+            height_min=height_min,
+            height_max=height_max,
+            weight_min=weight_min,
+            weight_max=weight_max,
+            draft_grade_min=draft_grade_min,
+            draft_grade_max=draft_grade_max,
+        )
+        
+        stats = AnalyticsService.get_position_statistics(db, position, filters)
+        
+        if stats["count"] == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No prospects found for position {position}"
+            )
+        
+        return stats
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Position statistics failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to calculate position statistics: {str(e)}"
+        )
+
+
+@analytics_router.get(
+    "/positions",
+    response_model=PositionsSummaryResponse,
+    summary="Get all positions summary",
+    description="Get summary statistics for all positions"
+)
+async def get_all_positions_summary(
+    db: Session = Depends(db.get_session)
+):
+    """Get summary statistics for all positions."""
+    try:
+        summary = AnalyticsService.get_all_positions_summary(db)
+        
+        return {
+            "positions": summary,
+            "total_positions": len(summary)
+        }
+        
+    except Exception as e:
+        logger.error(f"All positions summary failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to calculate positions summary: {str(e)}"
         )

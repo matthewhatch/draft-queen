@@ -11,7 +11,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from backend.api.routes import query_router, export_router
+from backend.api.routes import query_router, export_router, analytics_router
 
 # Configure logging
 def setup_logging():
@@ -185,6 +185,8 @@ app.add_middleware(
 # Include routers
 app.include_router(query_router)
 app.include_router(export_router)
+app.include_router(analytics_router)
+app.include_router(analytics_router)
 
 
 # Health check endpoint
