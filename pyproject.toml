@@ -8,6 +8,7 @@ readme = "README.md"
 packages = [
     { include = "backend" },
     { include = "data_pipeline" },
+    { include = "cli" },
 ]
 
 [tool.poetry.dependencies]
@@ -45,6 +46,12 @@ email-validator = "2.1.0"
 beautifulsoup4 = "^4.14.3"
 rapidfuzz = "<3.0"
 
+# CLI
+click = "^8.1.7"
+rich = "^13.7.0"
+keyring = "^24.3.0"
+pyyaml = "^6.0.1"
+
 [tool.poetry.group.dev.dependencies]
 # Testing
 pytest = "7.4.3"
@@ -64,8 +71,7 @@ sphinx = "7.2.6"
 sphinx-rtd-theme = "2.0.0"
 
 [tool.poetry.scripts]
-# CLI commands can be added here
-# Example: draft-queen = "main:main"
+dq = "cli.main:cli"
 
 [build-system]
 requires = ["poetry-core"]
