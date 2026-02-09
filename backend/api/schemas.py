@@ -90,3 +90,53 @@ class SavedQueryResponse(BaseModel):
     run_count: int = Field(default=0, description="Number of times query has been executed")
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class ExportRequest(BaseModel):
+    """Schema for export request."""
+    
+    format: str = Field(
+        description="Export format: json, jsonl, csv, or parquet"
+    )
+    filters: Optional[QueryFilterSchema] = Field(
+        None,
+        description="Optional query filters to apply before export"
+    )
+    pretty: bool = Field(
+        True,
+        description="Pretty-print JSON output (for json/jsonl formats)"
+    )
+    
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "format": "json",
+            "filters": {
+                "position": "QB",
+                "college": "Alabama"
+            },
+            "pretty": True
+        }
+    })
+
+
+class ExportResponse(BaseModel):
+    """Schema for export response metadata."""
+    
+    format: str
+    record_count: int
+    file_size_bytes: int
+    file_extension: str
+    content_type: str
+    created_at: datetime
+    
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "format": "json",
+            "record_count": 42,
+            "file_size_bytes": 12847,
+            "file_extension": "json",
+            "content_type": "application/json",
+            "created_at": "2026-02-09T12:00:00Z"
+        }
+    })
+

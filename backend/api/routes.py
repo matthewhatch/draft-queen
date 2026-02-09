@@ -1,17 +1,22 @@
 """FastAPI routes for prospect queries."""
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from fastapi import APIRouter, Depends, Query, HTTPException, Body, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import logging
+from datetime import datetime
+from typing import Optional
 
 from backend.database import db
-from backend.api.schemas import QueryFilterSchema, QueryResultSchema, RangeFilter
+from backend.api.schemas import QueryFilterSchema, QueryResultSchema, RangeFilter, ExportRequest, ExportResponse
 from backend.api.query_service import QueryService
+from backend.api.export_service import ExportService, ExportFormat
 
 logger = logging.getLogger(__name__)
 
 # Create router
 query_router = APIRouter(prefix="/api/prospects", tags=["prospects"])
+export_router = APIRouter(prefix="/api/exports", tags=["exports"])
 
 
 @query_router.post(
@@ -144,4 +149,154 @@ async def query_prospects_simple(
         raise HTTPException(
             status_code=500,
             detail=f"Query execution failed: {str(e)}"
+        )
+
+
+@export_router.post(
+    "/",
+    summary="Export prospects",
+    description="Export prospects to JSON, JSONL, CSV, or Parquet format"
+)
+async def export_prospects(
+    request: ExportRequest = Body(..., example={
+        "format": "json",
+        "filters": {
+            "position": "QB",
+            "college": "Alabama"
+        },
+        "pretty": True
+    }),
+    session: Session = Depends(db.get_session)
+) -> Response:
+    """Export prospects in specified format."""
+    try:
+        # Validate format
+        try:
+            export_format = ExportFormat(request.format.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported format. Supported: json, jsonl, csv, parquet"
+            )
+        
+        logger.info(
+            f"Export request: format={export_format.value}, "
+            f"filters={'yes' if request.filters else 'no'}"
+        )
+        
+        # Generate export
+        exported_data = ExportService.export_to_format(
+            session,
+            export_format,
+            request.filters,
+            request.pretty
+        )
+        
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+        file_extension = ExportService.get_file_extension(export_format)
+        filename = f"prospects_{timestamp}.{file_extension}"
+        media_type = ExportService.get_content_type(export_format)
+        
+        logger.info(f"Export successful: {filename}")
+        
+        # Return response
+        if isinstance(exported_data, bytes):
+            return Response(
+                content=exported_data,
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"'
+                }
+            )
+        else:
+            return Response(
+                content=exported_data,
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"'
+                }
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Export failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Export failed: {str(e)}"
+        )
+
+
+@export_router.get(
+    "/{format_name}",
+    summary="Quick export",
+    description="Quick export without request body"
+)
+async def quick_export(
+    format_name: str = Query(..., description="Export format: json, jsonl, csv, parquet"),
+    position: Optional[str] = Query(None, description="Filter by position"),
+    college: Optional[str] = Query(None, description="Filter by college"),
+    skip: int = Query(0, ge=0, description="Records to skip"),
+    limit: int = Query(1000, ge=1, le=10000, description="Records to return"),
+    session: Session = Depends(db.get_session)
+) -> Response:
+    """Quick export using URL query parameters."""
+    try:
+        # Validate format
+        try:
+            export_format = ExportFormat(format_name.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported format. Supported: json, jsonl, csv, parquet"
+            )
+        
+        # Build filters
+        filters = QueryFilterSchema(
+            position=position,
+            college=college,
+            skip=skip,
+            limit=limit
+        )
+        
+        # Generate export
+        exported_data = ExportService.export_to_format(
+            session,
+            export_format,
+            filters,
+            pretty=True
+        )
+        
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+        file_extension = ExportService.get_file_extension(export_format)
+        filename = f"prospects_{timestamp}.{file_extension}"
+        media_type = ExportService.get_content_type(export_format)
+        
+        # Return response
+        if isinstance(exported_data, bytes):
+            return Response(
+                content=exported_data,
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"'
+                }
+            )
+        else:
+            return Response(
+                content=exported_data,
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"'
+                }
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Export failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Export failed: {str(e)}"
         )
