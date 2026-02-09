@@ -341,9 +341,215 @@ Build comprehensive test suite validating data from scraping through reconciliat
 
 ---
 
+## US-027: CLI Tool - Pipeline Management & Monitoring
+
+### User Story
+As a **system administrator**  
+I want to **manage and monitor the data pipeline from the command line**  
+So that **I can quickly check status, trigger runs, and troubleshoot issues without needing the dashboard**
+
+### Description
+Build comprehensive CLI tool for pipeline management. Allow administrators to trigger pipeline executions, check status, view logs, and manage configurations from terminal.
+
+### Acceptance Criteria
+- [ ] `dq pipeline status` - Shows current pipeline execution status
+- [ ] `dq pipeline run` - Triggers immediate pipeline execution
+- [ ] `dq pipeline run --stages yahoo,espn` - Runs specific stages
+- [ ] `dq pipeline logs [execution_id]` - View logs for specific execution
+- [ ] `dq pipeline history [--limit 10]` - Shows last N executions
+- [ ] `dq pipeline retry [execution_id]` - Retries failed execution
+- [ ] `dq pipeline config show` - Display current configuration
+- [ ] `dq pipeline config set [KEY] [VALUE]` - Update configuration
+- [ ] Colored output with status indicators
+- [ ] Real-time streaming for long-running commands
+
+### Technical Acceptance Criteria
+- [ ] Click framework for CLI
+- [ ] Rich library for terminal formatting
+- [ ] Configuration file support (.dq-config.yaml)
+- [ ] API client for backend communication
+- [ ] Error handling and user-friendly messages
+- [ ] Help text for all commands
+
+### Tasks
+- **Backend:** Create CLI command handlers
+- **Backend:** Implement configuration management
+- **Backend:** Build API client wrapper
+- **Frontend:** Create CLI output formatting
+- **Frontend:** Write comprehensive help documentation
+
+### Definition of Done
+- [ ] All commands functional
+- [ ] Error handling complete
+- [ ] Help text comprehensive
+- [ ] Tests passing
+- [ ] Documentation complete
+
+### Effort
+- **Backend:** 2 story points
+- **Frontend:** 2 story points
+- **Total:** 4 story points
+
+---
+
+## US-028: CLI Tool - Data Query & Export
+
+### User Story
+As a **analyst**  
+I want to **query prospect data and export results from CLI**  
+So that **I can integrate draft-queen with my analysis scripts and workflows**
+
+### Description
+Add CLI commands for querying and exporting prospect data in multiple formats. Enable programmatic access to pipeline data.
+
+### Acceptance Criteria
+- [ ] `dq prospects list` - List all prospects with key stats
+- [ ] `dq prospects search [NAME]` - Find prospects by name (fuzzy match)
+- [ ] `dq prospects get [ID]` - Show detailed prospect info
+- [ ] `dq prospects export --format json --output file.json` - Export to JSON
+- [ ] `dq prospects export --format csv --output file.csv` - Export to CSV
+- [ ] `dq prospects export --format parquet --output file.parquet` - Export to Parquet
+- [ ] `dq history get [PROSPECT_ID]` - Historical changes for prospect
+- [ ] `dq history snapshot --date 2026-03-01` - Get data as of date
+- [ ] Filter support: `--position QB` `--height-min 6.0` `--college Alabama`
+- [ ] Pagination for large result sets
+
+### Technical Acceptance Criteria
+- [ ] Multiple export formats (JSON, CSV, Parquet)
+- [ ] Query builder/DSL for filtering
+- [ ] Streaming for large exports
+- [ ] Progress indicators
+- [ ] Result compression options
+- [ ] Output validation
+
+### Tasks
+- **Backend:** Implement query endpoints
+- **Backend:** Create export serializers
+- **Frontend:** Build query CLI commands
+- **Frontend:** Implement export formatters
+- **Data:** Write tests with sample queries
+
+### Definition of Done
+- [ ] All query commands working
+- [ ] All export formats supported
+- [ ] Filters functioning
+- [ ] Large exports streaming
+- [ ] Tests passing
+
+### Effort
+- **Backend:** 2 story points
+- **Frontend:** 3 story points
+- **Total:** 5 story points
+
+---
+
+## US-029: CLI Tool - Quality & Validation Management
+
+### User Story
+As a **data engineer**  
+I want to **manage data quality rules and view quality metrics from CLI**  
+So that **I can quickly identify and resolve data quality issues**
+
+### Description
+Add CLI commands for managing quality rules, viewing violations, and running quality checks on demand.
+
+### Acceptance Criteria
+- [ ] `dq quality rules list` - Show all active quality rules
+- [ ] `dq quality rules show [RULE_ID]` - Show rule details
+- [ ] `dq quality rules create --file rules.yaml` - Import rules from file
+- [ ] `dq quality violations` - Show current violations
+- [ ] `dq quality violations [PROSPECT_ID]` - Violations for specific prospect
+- [ ] `dq quality check [--prospects] [--force]` - Run quality check
+- [ ] `dq quality report [--format json|html|pdf]` - Generate quality report
+- [ ] `dq quality metrics` - Show overall quality metrics
+- [ ] Color-coded severity levels (ERROR, WARNING, INFO)
+- [ ] Batch violation resolution support
+
+### Technical Acceptance Criteria
+- [ ] Rules YAML file format specification
+- [ ] Rule validation before import
+- [ ] Violation querying with filters
+- [ ] Report generation (JSON, HTML templates)
+- [ ] Metrics calculation and caching
+- [ ] Batch operations support
+
+### Tasks
+- **Backend:** Create quality rule endpoints
+- **Backend:** Implement batch operations
+- **Frontend:** Build quality CLI commands
+- **Frontend:** Create report templates
+- **Data:** Define rules YAML schema
+
+### Definition of Done
+- [ ] All quality commands working
+- [ ] Rules importable from files
+- [ ] Violations queryable and resolvable
+- [ ] Reports generating
+- [ ] Tests passing
+
+### Effort
+- **Backend:** 2 story points
+- **Frontend:** 2 story points
+- **Data:** 1 story point
+- **Total:** 5 story points
+
+---
+
+## US-030: CLI Tool - Configuration & Administration
+
+### User Story
+As a **system administrator**  
+I want to **manage CLI configuration, authentication, and system settings**  
+So that **I can securely manage the draft-queen system from the command line**
+
+### Description
+Advanced CLI features for system administration: connection management, authentication, configuration, and diagnostics.
+
+### Acceptance Criteria
+- [ ] `dq config init` - Interactive setup wizard
+- [ ] `dq config validate` - Validate configuration file
+- [ ] `dq auth login` - Authenticate with backend
+- [ ] `dq auth logout` - Clear authentication
+- [ ] `dq auth status` - Show current auth status
+- [ ] `dq health check` - Diagnose system health
+- [ ] `dq db migrate` - Run database migrations
+- [ ] `dq db backup` - Create database backup
+- [ ] `dq version` - Show CLI and backend versions
+- [ ] `dq --verbose` - Verbose/debug logging mode
+
+### Technical Acceptance Criteria
+- [ ] Secure credential storage (keyring library)
+- [ ] Configuration schema validation
+- [ ] Health check endpoints
+- [ ] Database backup procedures
+- [ ] Verbose logging throughout
+- [ ] Version compatibility checking
+
+### Tasks
+- **Backend:** Create admin endpoints
+- **Backend:** Implement health checks
+- **Frontend:** Build admin CLI commands
+- **Frontend:** Create setup wizard
+- **Data:** Document configuration options
+
+### Definition of Done
+- [ ] Setup wizard working
+- [ ] Authentication functional
+- [ ] Health checks complete
+- [ ] Database operations working
+- [ ] Tests passing
+
+### Effort
+- **Backend:** 2 story points
+- **Frontend:** 2 story points
+- **Data:** 1 story point
+- **Total:** 5 story points
+
+---
+
 ## Sprint 3 Summary
 
-**Total Story Points:** ~44 points
+**Total Story Points:** ~44 + 19 = ~63 points (original + new CLI stories)
 
 **Key Outcomes:**
 - ✅ Yahoo Sports scraper operational (college stats)
@@ -354,6 +560,13 @@ Build comprehensive test suite validating data from scraping through reconciliat
 - ✅ ETL pipeline fully orchestrated
 - ✅ Comprehensive integration test suite
 - ✅ Data quality dashboard operational
+- ✅ Comprehensive CLI tool suite (4 commands categories)
+
+**CLI Capabilities:**
+- Pipeline management (`dq pipeline ...`)
+- Data query and export (`dq prospects ...`, `dq history ...`)
+- Quality rule management (`dq quality ...`)
+- System administration (`dq config ...`, `dq auth ...`, `dq health ...`)
 
 **Data Source Coverage:**
 - NFL.com: Combine measurements ✅ (Sprint 1)
