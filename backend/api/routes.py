@@ -5,16 +5,18 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from backend.database import db
 from backend.api.schemas import (
     QueryFilterSchema, QueryResultSchema, RangeFilter, ExportRequest, ExportResponse,
-    PositionStatisticsResponse, PositionsSummaryResponse
+    PositionStatisticsResponse, PositionsSummaryResponse,
+    TopProspectsResponse, RankedProspect, CompositeScoreResponse, CompositeScore
 )
 from backend.api.query_service import QueryService
 from backend.api.export_service import ExportService, ExportFormat
 from backend.api.analytics_service import AnalyticsService
+from backend.api.ranking_service import RankingService
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 query_router = APIRouter(prefix="/api/prospects", tags=["prospects"])
 export_router = APIRouter(prefix="/api/exports", tags=["exports"])
 analytics_router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+ranking_router = APIRouter(prefix="/api/ranking", tags=["ranking"])
 
 
 @query_router.post(
@@ -385,4 +388,121 @@ async def get_all_positions_summary(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to calculate positions summary: {str(e)}"
+        )
+
+
+# ============================================================================
+# Ranking Routes
+# ============================================================================
+
+@ranking_router.get(
+    "/top",
+    response_model=TopProspectsResponse,
+    summary="Get top prospects by metric",
+    description="Get top prospects ranked by a specific metric"
+)
+async def get_top_prospects(
+    metric: str = Query("draft_grade", description="Ranking metric (draft_grade, height, weight, round_projection)"),
+    position: Optional[str] = Query(None, description="Optional position filter"),
+    limit: int = Query(10, ge=1, le=100, description="Number of results"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    college: Optional[str] = Query(None, description="Optional college filter"),
+    height_min: Optional[float] = Query(None, ge=4.0, le=7.0, description="Minimum height (feet)"),
+    height_max: Optional[float] = Query(None, ge=4.0, le=7.0, description="Maximum height (feet)"),
+    weight_min: Optional[int] = Query(None, ge=100, le=400, description="Minimum weight (lbs)"),
+    weight_max: Optional[int] = Query(None, ge=100, le=400, description="Maximum weight (lbs)"),
+    draft_grade_min: Optional[float] = Query(None, ge=5.0, le=10.0, description="Minimum draft grade"),
+    draft_grade_max: Optional[float] = Query(None, ge=5.0, le=10.0, description="Maximum draft grade"),
+    db: Session = Depends(db.get_session)
+):
+    """Get top prospects ranked by a specific metric."""
+    try:
+        # Build filters
+        filters = QueryFilterSchema(
+            college=college,
+            height_min=height_min,
+            height_max=height_max,
+            weight_min=weight_min,
+            weight_max=weight_max,
+            draft_grade_min=draft_grade_min,
+            draft_grade_max=draft_grade_max,
+        )
+        
+        prospects = RankingService.get_top_prospects(
+            db, position, metric, limit, sort_order, filters
+        )
+        
+        return {
+            "metric": metric,
+            "sort_order": sort_order,
+            "position": position,
+            "limit": len(prospects),
+            "prospects": prospects
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Top prospects ranking failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to rank prospects: {str(e)}"
+        )
+
+
+@ranking_router.post(
+    "/composite",
+    response_model=CompositeScoreResponse,
+    summary="Get prospects ranked by composite score",
+    description="Get prospects ranked by weighted composite score combining multiple metrics"
+)
+async def get_composite_scores(
+    position: Optional[str] = Query(None, description="Optional position filter"),
+    limit: int = Query(10, ge=1, le=100, description="Number of results"),
+    college: Optional[str] = Query(None, description="Optional college filter"),
+    height_min: Optional[float] = Query(None, ge=4.0, le=7.0, description="Minimum height (feet)"),
+    height_max: Optional[float] = Query(None, ge=4.0, le=7.0, description="Maximum height (feet)"),
+    weight_min: Optional[int] = Query(None, ge=100, le=400, description="Minimum weight (lbs)"),
+    weight_max: Optional[int] = Query(None, ge=100, le=400, description="Maximum weight (lbs)"),
+    draft_grade_min: Optional[float] = Query(None, ge=5.0, le=10.0, description="Minimum draft grade"),
+    draft_grade_max: Optional[float] = Query(None, ge=5.0, le=10.0, description="Maximum draft grade"),
+    metrics: List[str] = Query(["draft_grade", "height", "weight"], description="Metrics to use"),
+    weights: List[float] = Query([0.5, 0.25, 0.25], description="Weights for metrics (must sum to 1.0)"),
+    db: Session = Depends(db.get_session)
+):
+    """Get prospects ranked by composite weighted score."""
+    try:
+        # Build filters
+        filters = QueryFilterSchema(
+            college=college,
+            height_min=height_min,
+            height_max=height_max,
+            weight_min=weight_min,
+            weight_max=weight_max,
+            draft_grade_min=draft_grade_min,
+            draft_grade_max=draft_grade_max,
+        )
+        
+        prospects = RankingService.get_composite_score(
+            db, position, metrics, weights, limit, filters
+        )
+        
+        # Build metric-weight mapping
+        weight_map = {metric: weight for metric, weight in zip(metrics, weights)}
+        
+        return {
+            "metrics": metrics,
+            "weights": weight_map,
+            "position": position,
+            "limit": len(prospects),
+            "prospects": prospects
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Composite scoring failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to calculate composite scores: {str(e)}"
         )

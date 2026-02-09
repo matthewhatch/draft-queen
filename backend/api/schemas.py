@@ -229,3 +229,99 @@ class PositionsSummaryResponse(BaseModel):
         }
     })
 
+
+class RankedProspect(BaseModel):
+    """A ranked prospect result."""
+    rank: int = Field(description="Rank position")
+    name: str = Field(description="Prospect name")
+    position: str = Field(description="Position code")
+    college: str = Field(description="College name")
+    height: Optional[float] = Field(None, description="Height in feet")
+    weight: Optional[int] = Field(None, description="Weight in lbs")
+    draft_grade: Optional[float] = Field(None, description="Draft grade")
+    round_projection: Optional[int] = Field(None, description="Round projection")
+    draft_grade_value: Optional[float] = Field(None, description="Metric value (varies by ranking metric)")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "rank": 1,
+            "name": "Patrick Mahomes",
+            "position": "QB",
+            "college": "Texas Tech",
+            "height": 6.25,
+            "weight": 205,
+            "draft_grade": 9.5,
+            "round_projection": 1,
+            "draft_grade_value": 9.5
+        }
+    })
+
+
+class TopProspectsResponse(BaseModel):
+    """Response for top prospects ranking."""
+    metric: str = Field(description="Ranking metric used")
+    sort_order: str = Field(description="Sort order (asc/desc)")
+    position: Optional[str] = Field(None, description="Position filter if applied")
+    limit: int = Field(description="Number of prospects returned")
+    prospects: List[RankedProspect] = Field(description="Ranked prospects")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "metric": "draft_grade",
+            "sort_order": "desc",
+            "position": "QB",
+            "limit": 10,
+            "prospects": []
+        }
+    })
+
+
+class CompositeScore(BaseModel):
+    """Composite score component."""
+    rank: int = Field(description="Rank position")
+    name: str = Field(description="Prospect name")
+    position: str = Field(description="Position code")
+    college: str = Field(description="College name")
+    height: Optional[float] = Field(None, description="Height in feet")
+    weight: Optional[int] = Field(None, description="Weight in lbs")
+    draft_grade: Optional[float] = Field(None, description="Draft grade")
+    round_projection: Optional[int] = Field(None, description="Round projection")
+    composite_score: float = Field(description="Weighted composite score (0-100)")
+    component_scores: Dict[str, float] = Field(description="Individual metric values")
+    weights: Dict[str, float] = Field(description="Weights used for each metric")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "rank": 1,
+            "name": "Patrick Mahomes",
+            "position": "QB",
+            "college": "Texas Tech",
+            "height": 6.25,
+            "weight": 205,
+            "draft_grade": 9.5,
+            "round_projection": 1,
+            "composite_score": 92.5,
+            "component_scores": {"draft_grade": 9.5, "height": 6.25, "weight": 205},
+            "weights": {"draft_grade": 0.5, "height": 0.25, "weight": 0.25}
+        }
+    })
+
+
+class CompositeScoreResponse(BaseModel):
+    """Response for composite score ranking."""
+    metrics: List[str] = Field(description="Metrics used in scoring")
+    weights: Dict[str, float] = Field(description="Weights for each metric")
+    position: Optional[str] = Field(None, description="Position filter if applied")
+    limit: int = Field(description="Number of prospects returned")
+    prospects: List[CompositeScore] = Field(description="Ranked prospects with composite scores")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "metrics": ["draft_grade", "height", "weight"],
+            "weights": {"draft_grade": 0.5, "height": 0.25, "weight": 0.25},
+            "position": "QB",
+            "limit": 10,
+            "prospects": []
+        }
+    })
+
