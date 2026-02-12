@@ -1,20 +1,21 @@
 # Sprint Plans - NFL Draft Analytics Platform
-**Project Duration:** 8 weeks (4 sprints)  
-**Target Launch:** Mid-April 2026  
+**Project Duration:** 10 weeks (5 sprints)  
+**Target Launch:** Apr 20, 2026  
 **Team:** Backend Engineer, Data Engineer, Frontend/DevTools Engineer
 
 ---
 
 ## Overview
 
-**Total Effort:** ~170 story points across 4 sprints
+**Total Effort:** ~175 story points across 5 sprints
 
 | Sprint | Duration | Focus | Story Points |
 |--------|----------|-------|--------------|
 | 1 | Feb 10-23 | Foundation & Data Infrastructure | ~30 |
 | 2 | Feb 24 - Mar 9 | Advanced Querying & Reporting | ~38 |
 | 3 | Mar 10-23 | Data Ingestion from Real Sources | ~44 |
-| 4 | Mar 24 - Apr 6 | Analytics & Launch Preparation | ~46 |
+| 4 | Mar 24 - Apr 6 | PFF Data Integration & Premium Analytics | ~35 |
+| 5 | Apr 7 - Apr 20 | Analytics & Launch Preparation | ~46 |
 
 ---
 
@@ -149,8 +150,63 @@
 
 ---
 
-## Sprint 4: Analytics & Launch Preparation
+## Sprint 4: PFF Data Integration & Premium Analytics
 **Duration:** Mar 24 - Apr 6 (2 weeks)  
+**Status:** PLANNED  
+**Story Points:** ~35
+
+### Goals
+- Integrate PFF.com as premium data source (Spike-001 Scenario A approved)
+- Implement PFF scraper and data reconciliation
+- Add PFF grades to analytics endpoints
+- Build grade-based analysis and conflict resolution dashboard
+- Multi-source grade quality validation
+
+### Key Deliverables
+- PFF.com Draft Big Board web scraper (static HTML parsing)
+- prospect_grades table with multi-source tracking
+- PFF grades in prospect detail endpoints
+- Grade distribution and correlation endpoints
+- Grade conflict resolution dashboard
+- Enhanced data quality for multi-source grades
+- Audit trail for all grade changes and sources
+
+### Team Tasks
+- **Data (6 pts):** PFF scraper implementation (US-040)
+- **Backend (1 pt):** Pipeline integration (US-040)
+- **Backend (4 pts):** Data reconciliation (US-041)
+- **Data (2 pts):** Reconciliation logic (US-041)
+- **Backend (4 pts):** Grade endpoints (US-042)
+- **Backend (2 pts):** Grade dashboard (US-043)
+- **Frontend (2 pts):** Dashboard interface (US-043)
+- **Backend (3 pts):** Quality validation (US-044)
+- **Data (1 pt):** Quality rules (US-044)
+
+### Success Criteria
+- ✅ PFF scraper extracts all prospect grades
+- ✅ Grades loaded into database daily
+- ✅ Multi-source reconciliation working
+- ✅ Grade endpoints operational (< 500ms)
+- ✅ Grade conflicts highlighted in dashboard
+- ✅ Zero unmatched prospects
+- ✅ Audit trail complete for all grade changes
+
+### Data Source Coverage After Sprint 4
+- NFL.com: Combine measurements ✅ (Sprint 1)
+- Yahoo Sports: College stats ✅ (Sprint 3)
+- ESPN: Injury data ✅ (Sprint 3)
+- **PFF: Industry grades ✅ (Sprint 4 - NEW)**
+- Multi-source reconciliation ✅ (All sprints)
+
+### Related ADRs
+- ADR-0010: PFF Data Source (Spike-001 investigation)
+- ADR-0009: Data Sourcing (web scrapers)
+- ADR-0002: Data Architecture (event-driven pipeline)
+
+---
+
+## Sprint 5: Analytics & Launch Preparation
+**Duration:** Apr 7 - Apr 20 (2 weeks)  
 **Status:** PLANNED  
 **Story Points:** ~46
 
@@ -173,13 +229,13 @@
 - User documentation and training
 
 ### Team Tasks
-- **Backend/Data (6 pts):** Trend analysis (US-030)
-- **Backend/Data (7 pts):** Injury risk (US-031)
-- **Backend/Data (6 pts):** Production readiness (US-032)
-- **Backend/Frontend (7 pts):** Report generation (US-033)
-- **Backend (5 pts):** Performance optimization (US-034)
-- **Backend (4 pts):** Monitoring (US-035)
-- **Backend/Data/Frontend (6 pts):** Production launch (US-036)
+- **Backend/Data (6 pts):** Trend analysis (US-050)
+- **Backend/Data (7 pts):** Injury risk (US-051)
+- **Backend/Data (6 pts):** Production readiness (US-052)
+- **Backend/Frontend (7 pts):** Report generation (US-053)
+- **Backend (5 pts):** Performance optimization (US-054)
+- **Backend (4 pts):** Monitoring (US-055)
+- **Backend/Data/Frontend (6 pts):** Production launch (US-056)
 
 ### Success Criteria
 - ✅ All analytics endpoints operational
@@ -188,6 +244,7 @@
 - ✅ Monitoring dashboard live
 - ✅ Zero critical issues in production
 - ✅ Team trained and using platform
+- ✅ Full data pipeline running end-to-end (5 sources)
 
 ### Related ADRs
 - ADR-0006: Deployment (single container)
@@ -201,25 +258,36 @@
 - **Sprint 1:** Core schema (prospects, measurables, stats, injuries, rankings)
 - **Sprint 2:** Quality metrics table, saved queries table
 - **Sprint 3:** Reconciliation audit table, snapshots table
-- **Sprint 4:** Analytics materialized views (trends, risk scores)
+- **Sprint 4:** prospect_grades table (multi-source), grade audit trail
+- **Sprint 5:** Analytics materialized views (trends, risk scores)
 
 ### Data Pipeline Complexity
 - **Sprint 1:** Single source (NFL.com), daily refresh
 - **Sprint 2:** Enhanced validation, automated scheduling
 - **Sprint 3:** Multi-source orchestration, conflict resolution
-- **Sprint 4:** Production hardening, monitoring
+- **Sprint 4:** PFF.com integration, grade reconciliation, expanded audit trail
+- **Sprint 5:** Production hardening, monitoring, full pipeline integration
 
 ### API Maturity
 - **Sprint 1:** Basic queries (position, college, measurables)
 - **Sprint 2:** Advanced queries, analytics endpoints
 - **Sprint 3:** Historical queries, reconciliation queries
-- **Sprint 4:** Batch operations, report generation
+- **Sprint 4:** Grade endpoints, conflict resolution, grade analytics
+- **Sprint 5:** Batch operations, report generation, advanced analytics
+
+### Data Source Coverage Evolution
+- **Sprint 1:** NFL.com (1 source)
+- **Sprint 2:** NFL.com + validation (1 source)
+- **Sprint 3:** NFL.com + Yahoo Sports + ESPN (3 sources)
+- **Sprint 4:** NFL.com + Yahoo Sports + ESPN + PFF.com (4 sources)
+- **Sprint 5:** All sources + advanced analytics (5 sources total)
 
 ### Team Ramp-Up
 - **Sprint 1:** Get familiar with codebase, PostgreSQL schema
 - **Sprint 2:** Build advanced features, optimize queries
 - **Sprint 3:** Multi-source integration, troubleshooting
-- **Sprint 4:** Production hardening, documentation
+- **Sprint 4:** Premium data integration, grade quality assurance
+- **Sprint 5:** Production hardening, documentation, launch
 
 ---
 
@@ -261,13 +329,14 @@
 
 ## Post-Launch (Future Sprints)
 
-### Sprint 5+: Enhancements
-- Predictive modeling (production readiness scoring)
+### Sprint 6+: Enhancements
+- Predictive modeling (production readiness scoring refinement)
 - Real-time injury updates
 - Draft simulation tools
 - Advanced analytics (clustering, anomaly detection)
 - Mobile app support
 - Official data partnerships
+- Machine learning models for prospect evaluation
 
 ---
 

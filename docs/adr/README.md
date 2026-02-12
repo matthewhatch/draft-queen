@@ -17,6 +17,7 @@ This directory contains Architecture Decision Records documenting major design d
 | [0007](#adr-0007-monitoring) | Monitoring & Observability - Prometheus + Dashboard | ✅ Accepted | Operations |
 | [0008](#adr-0008-export-formats) | Data Export Formats - JSON, CSV, Parquet | ✅ Accepted | Data |
 | [0009](#adr-0009-data-sourcing) | Data Sourcing Strategy - Public Web Scrapers | ✅ Accepted | Data |
+| [0010](#adr-0010-pff-data-source) | Evaluate PFF.com as Premium Data Source | 🔍 Spike | Data |
 
 ## Detailed ADR Summaries
 
@@ -282,6 +283,40 @@ This directory contains Architecture Decision Records documenting major design d
 - Manual data entry - not viable for 2,000+ prospects
 - Crowdsourced data - too slow for MVP
 - Data vendors (PFF) - expensive, not justified for MVP
+
+---
+
+### ADR 0010: Evaluate PFF.com as Premium Data Source
+
+**File:** [0010-pff-data-source.md](0010-pff-data-source.md)
+
+**Status:** 🔍 Spike Investigation (Decision Pending - Week 1 of Sprint 3)
+
+**Decision:** Time-boxed investigation to determine if PFF.com's Draft Big Board should be added as a data source.
+
+**Key Questions:**
+- **Technical:** Can we scrape it? (Static HTML vs. JavaScript-rendered?)
+- **Legal:** Is scraping allowed? (robots.txt, ToS, partnership opportunities?)
+- **Value:** What unique data does PFF provide? Worth the effort?
+- **Risk:** Legal, technical, maintenance burden?
+
+**Investigation Schedule:**
+- Start: Mar 10 (Sprint 3 Week 1)
+- Complete: Mar 15 (end of Week 1)
+- Decision: Mid-Sprint 3 review meeting
+
+**Three Scenarios:**
+1. **Low Risk, High Value** → Add to Sprint 3/4 backlog
+2. **Medium Risk, High Value** → Pursue official partnership for 2.0
+3. **High Risk** → Skip for MVP; revisit later
+
+**Why Consider PFF?**
+- Industry-standard prospect grades
+- Highly valued by NFL scouts
+- Could differentiate our platform
+- Potential for premium data partnerships
+
+**Current Status:** Investigation begins Mar 10; decision framework established.
 
 ---
 

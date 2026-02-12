@@ -1,0 +1,175 @@
+Fetching https://sports.yahoo.com/nfl/draft/...
+
+=== PAGE TITLE ===
+NFL Draft 2025 Draft Order - Yahoo Sports
+
+=== ALL CLASSES IN PAGE (first 50) ===
+  .!outline-2
+  .!shadow-none
+  .-left-full
+  .-ml-1
+  .-mr-px
+  .-top-full
+  .-translate-x-1/2
+  .NavigationItem_caret__pqNYO
+  .NavigationItem_darkTheme__WaJQs
+  .NavigationItem_interactiveDropdown__d9JYW
+  .NavigationItem_largeDropdown__cyLBz
+  .NavigationItem_navImage__pd_JZ
+  .NavigationItem_navItemText__ikVc_
+  .NavigationItem_navItem__31LOS
+  .NavigationItem_selected__rABgm
+  .SubNavigationHidden_dark__658fN
+  .SubNavigationHidden_overflowBtn__izv_8
+  .SubNavigationItem_subNavItem__sZljV
+  .SubNavigation_customNavWrapper__tDyx7
+  .SubNavigation_customSubnav__NSxek
+  .SubNavigation_hasBg__Ue9kT
+  .SubNavigation_subnavLeft___Aagz
+  .SubNavigation_subnavRef__B1l86
+  .SubNavigation_subnavRight__DJWed
+  .[&::-webkit-search-cancel-button]:hidden
+  .[box-shadow:0_4px_8px_0_rgb(0_0_0/10%),_0_0_1px_0_rgb(0_0_0/10%)]
+  .[height:inherit]
+  .[transition:all_.06s_ease-in]
+  .[transition:all_.3s_ease-in-out]
+  .[transition:height_.2s_ease-in-out]
+  .[transition:height_.3s_ease-in-out]
+  .[transition:height_ease-in_.2s]
+  .[transition:left_ease-in_.3s]
+  .[transition:margin-left_.2s_ease-in-out]
+  .[transition:min-width_.3s_ease-in,_max-width_.3s_ease-in]
+  .[transition:outline_.3s_ease-in-out]
+  .[transition:right_ease-in_.3s,_opacity_ease-in_.3s]
+  .[transition:transform_0.2s_ease-out,opacity_0.1s_linear,margin_0.2s_ease-out]
+  .[width:inherit]
+  ._ys_10xk0vd
+  ._ys_12nwf3r
+  ._ys_12tkg3i
+  ._ys_12vk2ak
+  ._ys_133k5f7
+  ._ys_148wwc4
+  ._ys_14lyo29
+  ._ys_15y3ppa
+  ._ys_16vwbou
+  ._ys_16xpnbt
+  ._ys_171e7vz
+
+=== LOOKING FOR PLAYER DATA ===
+Tables found: 0
+Divs with 'player' in class: 0
+
+=== LOOKING FOR NAMES/POSITIONS ===
+  QB: 15 occurrences
+  RB: 25 occurrences
+  WR: 31 occurrences
+  TE: 17 occurrences
+  OL: 21 occurrences
+  DL: 40 occurrences
+  LB: 10 occurrences
+  DB: 24 occurrences
+
+=== PAGE LENGTH ===
+Total HTML: 2609645 bytes
+Total text content: 60190 bytes
+
+Scripts found: 121
+
+=== FOUND RELEVANT SCRIPT ===
+{"spaceid":"97462875","hashtag":"nfldrafthub","event_params":{"yLeague":"nfl","ySportType":"football","yPageType":"utility","yPageCategoryType":"draft","yPageTypeDetail":"leaguepage","yProductSection":"leaguepage","yProductSubsection":"draft"},"keys":{"sport":"nfl","pt":"utility","pct":"draftpage"}}
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"31:I[21957,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"36:I[23661,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"4e:I[28349,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"50:I[81293,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"51:I[12561,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"54:I[17600,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"56:I[95274,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"57:I[76151,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"58:I[63014,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"59:I[97952,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"0:{\"P\":null,\"b\":\"ae31eddf350f3e8e84f1396a91567d6f4a655005\",\"c\":[\"\",\"nfl\",\"draft\",\"\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[[\"path\",\"nfl/draft\",\"oc\"],{\"children\":[\"__PAGE__\",{}]}]},\"$undefined\",\"$undefined\",true],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"https://s.yimg.com/xe/next-app-sports/_next/static/css/6d303e98b9c85482.css\",\"precedence\":\"next\",\"crossOrigin\":\"anonymo
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"2c:[\"$\",\"body\",null,{\"children\":[\"$\",\"$L30\",null,{\"id\":\"page_layout\",\"children\":[[[\"$\",\"$L31\",null,{\"moduleIds\":[\"app/layout.tsx -\u003e @/components/client/ThemeProvider\"]}],[\"$\",\"$L32\",null,{\"theme\":\"light\",\"webview\":false}]],[\"$\",\"script\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"\u003cesi:vars\u003e{\\\"acookieConsent\\\":\\\"$(HTTP_HEADER{x-acookie-guc-consent-types})\\\",\\\"acookieFields\\\":\\\"$(HTTP_HEADER{x-acookie-fie
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"37:[\"$\",\"$L3b\",null,{\"config\":{\"editionsData\":{\"links\":[{\"lang\":\"English\",\"lcLang\":\"en-us\",\"name\":\"US\",\"selected\":true,\"url\":\"https://www.yahoo.com/?p=dnr\"},{\"lang\":\"Español\",\"lcLang\":\"es-us\",\"name\":\"US y LATAM\",\"selected\":false,\"url\":\"https://espanol.yahoo.com/?p=dnr\"},{\"lang\":\"English\",\"lcLang\":\"en-au\",\"name\":\"Australia\",\"selected\":false,\"url\":\"https://au.yahoo.com/?p=dnr\"},{\"lang\":\"English\",\"lcLang\":\
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"52:{\"navItems\":[{\"name\":\"NFL\",\"url\":\"https://sports.yahoo.com/nfl/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"https://s.yimg.com/cv/apiv2/ybar/icons/logo_nfl@3x.png\",\"darkImageUrl\":\"\",\"iconName\":\"\",\"children\":[{\"name\":\"Scores\",\"url\":\"https://sports.yahoo.com/nfl/scoreboard/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"\",\"darkImageUrl\":\"\",\"children\":[]},{\"name\":\"Playoff 
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"5e:I[84923,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"5:[\"$\",\"$L4e\",null,{\"strategy\":\"afterInteractive\",\"children\":[[\"$\",\"$L50\",null,{\"position\":\"top\",\"style\":{\"backgroundColor\":\"#000000\",\"zIndex\":20},\"children\":[\"$\",\"div\",null,{\"className\":\"_ys_16vwbou\",\"children\":[\"$\",\"$L51\",null,{\"navNodes\":\"$@5a\",\"sectionName\":\"nfl\",\"pathName\":\"nfl/draft\",\"headerTheme\":{\"enabled\":\"enabled\",\"backgroundColor\":\"#000000\",\"backgroundImages\":{\"mobile\":{\"url\":\"https://s.yimg.
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"5a:{\"navItems\":[{\"name\":\"NFL\",\"url\":\"https://sports.yahoo.com/nfl/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"https://s.yimg.com/cv/apiv2/ybar/icons/logo_nfl@3x.png\",\"darkImageUrl\":\"\",\"iconName\":\"\",\"children\":[{\"name\":\"Scores\",\"url\":\"https://sports.yahoo.com/nfl/scoreboard/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"\",\"darkImageUrl\":\"\",\"children\":[]},{\"name\":\"Playoff 
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"5f:{\"navItems\":[{\"name\":\"NFL\",\"url\":\"https://sports.yahoo.com/nfl/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"https://s.yimg.com/cv/apiv2/ybar/icons/logo_nfl@3x.png\",\"darkImageUrl\":\"\",\"iconName\":\"\",\"children\":[{\"name\":\"Scores\",\"url\":\"https://sports.yahoo.com/nfl/scoreboard/\",\"badge\":\"\",\"openInNewTab\":false,\"isFooterItem\":false,\"imageUrl\":\"\",\"darkImageUrl\":\"\",\"children\":[]},{\"name\":\"Playoff 
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"14:[[\"$\",\"title\",\"0\",{\"children\":\"NFL Draft 2025 Draft Order - Yahoo Sports\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"View the NFL Draft order for the 2025 draft from Green Bay, Wisconsin.\"}],[\"$\",\"meta\",\"2\",{\"name\":\"application-name\",\"content\":\"Yahoo Sports\"}],[\"$\",\"link\",\"3\",{\"rel\":\"manifest\",\"href\":\"/manifest.json\",\"crossOrigin\":\"$undefined\"}],[\"$\",\"meta\",\"4\",{\"name\":\"conf:cjs:consent-flow\",\"co
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"61:I[16915,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"**Nate Tice:** As the  most dynamic player in the country, Hunter was a game-changer at cornerback and wide receiver in college. Still, I think his best path as a professional is as a full-time defender with some spot duty on offense — a usage resembling his coach/mentor Deion Sanders when he played with the Dallas Cowboys in 1996. Hunter can consistently stay sticky to his coverage assignment, showing off the quickness and body control to thrive in man-to-man situations, 
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"63:T439,**Nate Tice:** When a Penn State defender now gets the No. 11 jersey, he is inevitably going to get compared to Micah Parsons, which is unfair for any player and such a high bar. Still, Carter is about as close to that Parsons comparison as a player can get. He is a twitchy pass rusher who can bend around corners and somehow stay on his feet despite contorting his body like Gumby. Carter is still adding layers to his usage of hands and how to keep blockers off-bala
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"having a porous defense. Ward is a big-time risk-taker on the field, but his arm talent and accuracy down the field allow him to keep the Hurricanes alive in tough spots. His willingness to hunt big plays gets him in trouble sometimes, but it’s better to have to reign that in than try to get him to play outside of his comfort zone.67:T43e,**Nate Tice:** Stewart put on a show at the NFL scouting combine, which wasn’t a surprise given what he flashes on film. Stewart’s natur
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"onsistent with his hand placement which can put him in bad positions at times.\n\n**Charles McDonald:** Banks is a solid offensive line prospect who projects well to either tackle or guard in the NFL, depending on where teams see him fit. He could stand to get stronger as he struggled at times against Texas’ tougher opponents, but the framework for a quality starter is there with a little bit of seasoning. Banks came into the season as a top-10 prospect, but isn’t likely t
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"0b,**Nate Tice:** Ezeiruaku doesn’t have overwhelming size, but he’s long (34-inch arm length) and is a disruptive pass rusher with a devastating swim move. He is a productive player who can consistently affect the passer and has twitchiness and enough length to overcome his lack-of-ideal size, but he can still get smothered by larger offensive tackles, especially in the run game.\n\n While this might limit Ezeiruaku’s every-down projection at the next level, everyone love
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"76:T41b,**Nate Tice:** Judkins is strong and runs with a fun combination of power and grace. The Ole Miss transfer can quickly get to fourth gear (maybe not fifth) and into the secondary in a hurry. He’s not a back who relies on just his speed, consistently showing the ability to tempo his runs while using good vision to set up blockers and use his burst to take advantage. \n\nJudkins is also a good receiver with sticky hands who is a viable player to draw up plays out of 
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"5d:[[\"$\",\"div\",null,{\"className\":\"_ys_gupwdl _ys_18577pt\",\"data-color-scheme\":\"$undefined\",\"data-bg-xl\":\"$undefined\",\"data-bg-lg\":\"$undefined\",\"data-bg-md\":\"$undefined\",\"data-bg-sm\":\"$undefined\",\"data-bg-xs\":\"$undefined\",\"style\":{\"--ys-c-b-i-dark-url\":\"$undefined\",\"--ys-c-b-i-large\":\"url(https://s.yimg.com/ep/cx/blendr/v2/image-nfl-draft-bg-jpg_1745430285112.jpeg)\",\"--ys-c-b-i-light-url\":\"$undefined\",\"--ys-c-b-i-medium\":\"url
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"7d:I[50014,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"7e:I[90117,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"7b:[\"$\",\"div\",null,{\"className\":\"_ys_gupwdl\",\"data-color-scheme\":\"$undefined\",\"data-bg-xl\":\"$undefined\",\"data-bg-lg\":\"$undefined\",\"data-bg-md\":\"$undefined\",\"data-bg-sm\":\"$undefined\",\"data-bg-xs\":\"$undefined\",\"style\":{\"--ys-c-b-i-dark-url\":\"$undefined\",\"--ys-c-b-i-large\":\"$undefined\",\"--ys-c-b-i-light-url\":\"$undefined\",\"--ys-c-b-i-medium\":\"$undefined\",\"--ys-c-b-i-small\":\"$undefined\",\"--ys-c-b-i-url\":\"$undefined\",\"--
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"7f:I[57839,[\"796\",\"static/chunks/route-boxscore-10474cc905fb8fb1.js\",\"1394\",\"static/chunks/route-tournament-2b7a30f48b11cfff.js\",\"1500\",\"static/chunks/route-player-ac5a0ad49a0e384a.js\",\"9048\",\"static/chunks/route-team-02e848f2f4a21186.js\",\"6942\",\"static/chunks/route-home-39c15e2dc1511428.js\",\"3856\",\"static/chunks/route-draft-fcf026c191879b2d.js\",\"2098\",\"static/chunks/components-article-42ecd04313c1fedd.js\",\"6308\",\"static/chunks/components-uti
+
+=== FOUND RELEVANT SCRIPT ===
+self.__next_f.push([1,"7c:[\"$\",\"$L7f\",null,{\"id\":\"featured-module\",\"mpos\":1,\"enabled\":\"enabled\",\"layout\":\"topnews-single\",\"title\":\"Top NFL Draft News\",\"headerLinkUrl\":\"\",\"headerLinkText\":\"\",\"contentId\":\"nfl-draft\",\"gameId\":\"\",\"scoreDisplayType\":\"scorebug\",\"headlinesListId\":\"a6fb42b2-a4b4-48ad-a8ed-f4fb16ba65d9\",\"logoDarkTheme\":{},\"logoLightTheme\":{},\"attributionImage\":{},\"attributionDivider\":false,\"attributionText\":\"\",\"attributionLink\":

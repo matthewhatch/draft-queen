@@ -547,9 +547,126 @@ Advanced CLI features for system administration: connection management, authenti
 
 ---
 
+## SPIKE-001: Feasibility Study - PFF.com Draft Big Board Scraping
+
+### Spike Type
+**Investigation & Feasibility** (Time-boxed: 3-5 story points)
+
+### Objective
+Investigate whether PFF.com's Draft Big Board (https://www.pff.com/draft/big-board?season=2026) can be reliably scraped for prospect grades and rankings as an additional data source.
+
+### Background
+PFF (Pro Football Focus) provides proprietary prospect grades and advanced analytics. Adding PFF grades would enhance our ranking and evaluation capabilities. However, PFF likely has stricter terms of service around data usage.
+
+### Questions to Answer
+
+1. **Technical Feasibility**
+   - Is the page JavaScript-rendered or static HTML?
+   - What data fields are available (grades, rankings, position, player info)?
+   - How is data loaded (API calls, embedded JSON, DOM rendering)?
+   - Page structure stability (do updates break scraping)?
+
+2. **Legal/Ethical Compliance**
+   - What does PFF's robots.txt say?
+   - Does PFF's terms of service prohibit scraping?
+   - Is there an official API available?
+   - Could we reach out to PFF for data partnership?
+
+3. **Data Quality & Value**
+   - What grades/rankings does PFF provide?
+   - How does PFF data align with our other sources?
+   - Are there overlaps with ESPN/Yahoo Sports data?
+   - What unique value does PFF add to our analysis?
+
+4. **Implementation Complexity**
+   - Does BeautifulSoup work, or do we need Selenium?
+   - Rate limiting requirements?
+   - How frequently is data updated?
+   - Effort estimate for full scraper (if feasible)?
+
+### Acceptance Criteria
+- [ ] Analyze PFF.com page structure (static vs. JavaScript-rendered)
+- [ ] Document data fields available on Big Board
+- [ ] Review PFF robots.txt and terms of service
+- [ ] Assess legal risk and compliance issues
+- [ ] Create proof-of-concept scraper (if low risk)
+- [ ] Document findings and recommendation
+
+### Tasks
+- **Data/Research:** Analyze PFF page structure
+- **Data/Research:** Review terms of service and legal implications
+- **Backend:** Build PoC scraper (if approved)
+- **PM:** Research official API or partnership opportunities
+
+### Deliverables
+- **Technical Analysis Document**
+  - Page structure findings
+  - Data extraction methods (HTML parsing vs. API vs. Selenium)
+  - Rate limiting and frequency requirements
+  
+- **Legal/Compliance Assessment**
+  - robots.txt compliance status
+  - Terms of service review
+  - Risk assessment (low/medium/high)
+  - Recommended approach
+  
+- **Proof-of-Concept (if low risk)**
+  - Sample scraper code
+  - Performance metrics
+  - Error handling strategy
+  
+- **Decision Recommendation**
+  - Proceed with full scraper? (Sprint 4?)
+  - Contact PFF for partnership?
+  - Skip PFF for MVP?
+
+### Success Criteria
+- [ ] Clear understanding of PFF data availability
+- [ ] Legal/ethical risk assessed
+- [ ] Team can make informed decision about Sprint 4 work
+- [ ] PoC demonstrates feasibility (if applicable)
+
+### Effort
+- **Data/Research:** 3 story points
+- **Backend (PoC):** 2 story points (if approved)
+- **Total:** 3-5 story points (time-boxed)
+
+### Timeline
+- **Start:** Week 1 of Sprint 3 (Mar 10)
+- **Complete by:** Mar 15 (end of first week)
+- **Decision point:** Mid-Sprint 3 planning review
+
+### Success Scenarios
+
+**Scenario A: Low Risk, High Value**
+- ✅ Static HTML page, easy to parse
+- ✅ robots.txt allows scraping
+- ✅ Terms of service permit data extraction
+- **Action:** Add PFF scraper to Sprint 3 or 4 backlog
+
+**Scenario B: Medium Risk, Moderate Value**
+- ⚠️ Requires Selenium for JavaScript rendering
+- ⚠️ robots.txt discourages scraping
+- ⚠️ Terms of service ambiguous
+- **Action:** Reach out to PFF for official partnership/API
+
+**Scenario C: High Risk, Lower Priority**
+- ❌ Terms of service prohibit scraping
+- ❌ Dynamic content difficult to parse
+- ❌ Very high rate limiting
+- **Action:** Skip for MVP; revisit after launch
+
+### Follow-up Actions (If Approved)
+- Create full user story for PFF scraper (Sprint 4?)
+- Add to data reconciliation framework
+- Include PFF grades in ranking endpoints
+- Update analytics dashboard with PFF-sourced metrics
+
+---
+
 ## Sprint 3 Summary
 
-**Total Story Points:** ~44 + 19 = ~63 points (original + new CLI stories)
+**Total Story Points:** ~44 + 19 = ~63 points (original + new CLI stories) + Spike (3-5 TBD)
 
 **Key Outcomes:**
 - ✅ Yahoo Sports scraper operational (college stats)

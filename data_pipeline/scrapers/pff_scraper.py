@@ -1,0 +1,429 @@
+"""
+PFF.com Draft Big Board Production Scraper
+
+Production-ready implementation with:
+- Comprehensive error handling and recovery
+- Structured logging (timestamps, counts, errors)
+- Cache fallback mechanism
+- Rate limiting (3-5s delays)
+- Async/await for performance
+- Data validation framework
+"""
+
+import asyncio
+import json
+import logging
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from bs4 import BeautifulSoup
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+
+class PFFScraperConfig:
+    """Configuration for PFF scraper"""
+
+    BASE_URL = "https://www.pff.com/draft/big-board"
+    CACHE_DIR = Path(__file__).parent.parent.parent / "data" / "cache" / "pff"
+    DEFAULT_SEASON = 2026
+    RATE_LIMIT_DELAY = 4.0  # seconds between requests
+    REQUEST_TIMEOUT = 15000  # milliseconds
+    MAX_RETRIES = 2
+    HEADLESS = True
+
+
+class PFFProspectValidator:
+    """Validates PFF prospect data"""
+
+    VALID_POSITIONS = {
+        "QB", "RB", "FB", "WR", "TE", "LT", "LG", "C", "RG", "RT",
+        "DT", "DE", "EDGE", "LB", "CB", "S", "SS", "FS", "K", "P"
+    }
+
+    @staticmethod
+    def validate_grade(grade: Optional[str]) -> bool:
+        """Validate prospect grade (0-100 scale)"""
+        if not grade:
+            return True  # Missing grades acceptable
+        try:
+            grade_val = float(grade)
+            return 0 <= grade_val <= 100
+        except (ValueError, TypeError):
+            return False
+
+    @staticmethod
+    def validate_position(position: Optional[str]) -> bool:
+        """Validate prospect position code"""
+        if not position:
+            return True  # Missing position acceptable
+        return position.upper() in PFFProspectValidator.VALID_POSITIONS
+
+    @staticmethod
+    def validate_prospect(prospect: Dict) -> bool:
+        """Validate complete prospect record"""
+        if not prospect.get("name"):
+            return False
+
+        if prospect.get("grade") and not PFFProspectValidator.validate_grade(prospect["grade"]):
+            return False
+
+        if prospect.get("position") and not PFFProspectValidator.validate_position(prospect["position"]):
+            return False
+
+        return True
+
+
+class PFFScraper:
+    """Production PFF.com Draft Big Board scraper"""
+
+    def __init__(
+        self,
+        season: int = PFFScraperConfig.DEFAULT_SEASON,
+        headless: bool = PFFScraperConfig.HEADLESS,
+        cache_enabled: bool = True,
+    ):
+        """Initialize scraper with configuration"""
+        self.season = season
+        self.headless = headless
+        self.cache_enabled = cache_enabled
+        self.prospects = []
+        self.cache_dir = PFFScraperConfig.CACHE_DIR
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Configure logging
+        self._setup_logging()
+
+    def _setup_logging(self) -> None:
+        """Configure logging with timestamps and structured output"""
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                "%(asctime)s - PFF_SCRAPER - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+
+    def _get_cache_path(self, page_num: int) -> Path:
+        """Get cache file path for page"""
+        return self.cache_dir / f"season_{self.season}_page_{page_num}.json"
+
+    def _load_cache(self, page_num: int) -> Optional[List[Dict]]:
+        """Load prospects from cache"""
+        if not self.cache_enabled:
+            return None
+
+        cache_path = self._get_cache_path(page_num)
+        if not cache_path.exists():
+            return None
+
+        try:
+            with open(cache_path, "r") as f:
+                data = json.load(f)
+                age_seconds = time.time() - data.get("timestamp", 0)
+                age_hours = age_seconds / 3600
+
+                if age_hours > 24:  # Cache valid for 24 hours
+                    logger.info(f"Cache for page {page_num} is stale ({age_hours:.1f}h old)")
+                    return None
+
+                logger.info(f"Loaded {len(data.get('prospects', []))} prospects from cache (page {page_num})")
+                return data.get("prospects", [])
+        except Exception as e:
+            logger.warning(f"Error loading cache: {e}")
+            return None
+
+    def _save_cache(self, page_num: int, prospects: List[Dict]) -> None:
+        """Save prospects to cache"""
+        if not self.cache_enabled:
+            return
+
+        try:
+            cache_path = self._get_cache_path(page_num)
+            cache_data = {
+                "timestamp": time.time(),
+                "season": self.season,
+                "page": page_num,
+                "prospects": prospects,
+                "count": len(prospects),
+            }
+
+            with open(cache_path, "w") as f:
+                json.dump(cache_data, f, indent=2)
+
+            logger.info(f"Cached {len(prospects)} prospects for page {page_num}")
+        except Exception as e:
+            logger.error(f"Error saving cache: {e}")
+
+    def parse_prospect(self, prospect_div) -> Optional[Dict]:
+        """
+        Parse prospect from HTML div
+        
+        Extracts: name, position, school, class, grade
+        """
+        try:
+            # Extract name from h3 or h4 tag
+            name_elem = prospect_div.find(["h3", "h4"])
+            
+            if not name_elem:
+                logger.debug("Name element not found in prospect div")
+                return None
+
+            name = name_elem.get_text(strip=True)
+            if not name:
+                return None
+
+            # Extract other fields
+            school_elem = prospect_div.find("span", class_="school")
+            class_elem = prospect_div.find("span", class_="class")
+            pos_elem = prospect_div.find("span", class_="position")
+            grade_elem = prospect_div.find("span", class_="grade")
+
+            prospect = {
+                "name": name,
+                "position": pos_elem.get_text(strip=True) if pos_elem else None,
+                "school": school_elem.get_text(strip=True) if school_elem else None,
+                "class": class_elem.get_text(strip=True) if class_elem else None,
+                "grade": grade_elem.get_text(strip=True) if grade_elem else None,
+                "scraped_at": datetime.utcnow().isoformat(),
+            }
+
+            # Validate before returning
+            if not PFFProspectValidator.validate_prospect(prospect):
+                logger.debug(f"Invalid prospect: {prospect}")
+                return None
+
+            return prospect
+
+        except Exception as e:
+            logger.debug(f"Error parsing prospect: {e}")
+            return None
+
+    async def scrape_page(self, page_num: int, retry_count: int = 0) -> List[Dict]:
+        """
+        Scrape single page of prospects
+        
+        Returns prospects from cache if available, otherwise fetches from PFF.com
+        """
+        # Try cache first
+        cached = self._load_cache(page_num)
+        if cached:
+            return cached
+
+        try:
+            from playwright.async_api import async_playwright
+
+            logger.info(f"Scraping page {page_num}...")
+
+            async with async_playwright() as playwright:
+                try:
+                    browser = await playwright.chromium.launch(
+                        headless=self.headless,
+                        args=["--disable-dev-shm-usage"],
+                    )
+                except Exception as e:
+                    logger.error(f"Browser launch failed: {e}")
+                    raise
+                logger.info(f"Browser launched successfully")
+                context = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                )
+
+                try:
+                    page = await context.new_page()
+                    url = f"{PFFScraperConfig.BASE_URL}?season={self.season}&page={page_num}"
+
+                    logger.info(f"Starting page load for {url}")
+                    await page.goto(url, wait_until="load", timeout=PFFScraperConfig.REQUEST_TIMEOUT)
+                    logger.info(f"Page {page_num} loaded successfully")
+                    
+                    # Wait for prospect cards to be rendered
+                    try:
+                        logger.info(f"Waiting for selector: div.card-prospects-box (timeout: 5000ms)")
+                        await page.wait_for_selector("div.card-prospects-box", timeout=5000)
+                        logger.info(f"Prospect cards rendered on page {page_num}")
+                    except Exception as e:
+                        logger.warning(f"Prospect selector not found after wait: {e}")
+                    
+                    # Additional wait for JavaScript to complete rendering
+                    await asyncio.sleep(1.0)
+
+                    html = await page.content()
+                    logger.info(f"Page {page_num} HTML retrieved: {len(html)} bytes")
+                    
+                    # Log first 500 chars and look for key indicators
+                    logger.debug(f"HTML snippet (first 500 chars):\n{html[:500]}")
+                    
+                    # Check if we got meaningful content
+                    if len(html) < 1000:
+                        logger.warning(f"Page {page_num} HTML is very small ({len(html)} bytes) - may not be fully loaded")
+                    
+                    if "card-prospects-box" in html:
+                        logger.info(f"✓ Found prospect selector in HTML")
+                    else:
+                        logger.warning(f"✗ Prospect selector NOT found in HTML")
+                    
+                    # save html to html file for debugging
+                    with open(f"page_{page_num}.html", "w") as f:
+                        f.write(html)
+                    logger.info(f"HTML saved to page_{page_num}.html for manual inspection")
+                        
+                    # Parse prospects
+                    soup = BeautifulSoup(html, "html.parser")
+                    prospects = []
+
+                    # Get prospect cards
+                    prospect_divs = soup.find_all("div", class_="card-prospects-box")
+                    logger.info(f"Found {len(prospect_divs)} prospect divs in parsed HTML")
+                    
+                    if not prospect_divs:
+                        logger.error(f"No prospects found on page {page_num}. Check HTML file for debugging.")
+                        logger.error(f"Expected selector: div.card-prospects-box")
+
+                    for div in prospect_divs:
+                        prospect = self.parse_prospect(div)
+                        if prospect:
+                            prospects.append(prospect)
+
+                    logger.info(f"Extracted {len(prospects)} prospects from page {page_num}")
+
+                    # Cache results
+                    self._save_cache(page_num, prospects)
+
+                    await page.close()
+
+                    return prospects
+
+                finally:
+                    await context.close()
+                    await browser.close()
+
+        except TimeoutError as e:
+            logger.error(f"🔴 TIMEOUT on page {page_num}: {e}")
+            logger.error(f"The page took longer than {PFFScraperConfig.REQUEST_TIMEOUT}ms to load")
+
+            # Fallback to cache even if stale
+            cache_path = self._get_cache_path(page_num)
+            if cache_path.exists():
+                logger.info(f"Using stale cache for page {page_num}")
+                try:
+                    with open(cache_path, "r") as f:
+                        return json.load(f).get("prospects", [])
+                except Exception as cache_e:
+                    logger.error(f"Stale cache also failed: {cache_e}")
+
+            # Retry if not exhausted
+            if retry_count < PFFScraperConfig.MAX_RETRIES:
+                logger.info(f"Retrying page {page_num} (attempt {retry_count + 1})")
+                await asyncio.sleep(5.0)  # Wait before retry
+                return await self.scrape_page(page_num, retry_count + 1)
+
+            return []
+
+        except Exception as e:
+            logger.error(f"❌ Error scraping page {page_num}: {type(e).__name__}: {e}")
+
+            # Fallback to cache
+            cache_path = self._get_cache_path(page_num)
+            if cache_path.exists():
+                logger.info(f"Using cache after error for page {page_num}")
+                try:
+                    with open(cache_path, "r") as f:
+                        return json.load(f).get("prospects", [])
+                except Exception:
+                    pass
+
+            return []
+
+    async def scrape_all_pages(self, max_pages: int = 10) -> List[Dict]:
+        """
+        Scrape all pages of prospects with rate limiting
+        
+        Args:
+            max_pages: Maximum number of pages to scrape
+            
+        Returns:
+            List of all prospect dictionaries
+        """
+        logger.info(f"Starting scrape: season={self.season}, max_pages={max_pages}")
+        start_time = time.time()
+
+        self.prospects = []
+
+        for page_num in range(1, max_pages + 1):
+            # Rate limiting
+            if page_num > 1:
+                await asyncio.sleep(PFFScraperConfig.RATE_LIMIT_DELAY)
+
+            prospects = await self.scrape_page(page_num)
+
+            if not prospects:
+                logger.info(f"No more prospects found, stopping at page {page_num - 1}")
+                break
+
+            self.prospects.extend(prospects)
+
+        elapsed = time.time() - start_time
+        logger.info(f"Scrape complete: {len(self.prospects)} total prospects in {elapsed:.1f}s")
+
+        return self.prospects
+
+    def get_summary(self) -> Dict:
+        """Get scrape summary statistics"""
+        if not self.prospects:
+            return {
+                "total_prospects": 0,
+                "by_position": {},
+                "by_school": {},
+                "scraped_at": datetime.utcnow().isoformat(),
+            }
+
+        by_position = {}
+        by_school = {}
+
+        for prospect in self.prospects:
+            pos = prospect.get("position", "UNKNOWN")
+            school = prospect.get("school", "UNKNOWN")
+
+            by_position[pos] = by_position.get(pos, 0) + 1
+            by_school[school] = by_school.get(school, 0) + 1
+
+        return {
+            "total_prospects": len(self.prospects),
+            "by_position": by_position,
+            "by_school": by_school,
+            "scraped_at": datetime.utcnow().isoformat(),
+        }
+
+    def print_summary(self) -> None:
+        """Print scrape summary"""
+        summary = self.get_summary()
+
+        print(f"\n{'='*60}")
+        print(f"PFF Scraper Summary - Season {self.season}")
+        print(f"{'='*60}\n")
+
+        print(f"Total Prospects: {summary['total_prospects']}\n")
+
+        if summary["by_position"]:
+            print("By Position:")
+            for pos in sorted(summary["by_position"].keys()):
+                count = summary["by_position"][pos]
+                print(f"  {pos:5s}: {count:3d}")
+            print()
+
+        if summary["by_school"]:
+            print("Top Schools:")
+            sorted_schools = sorted(
+                summary["by_school"].items(), key=lambda x: x[1], reverse=True
+            )
+            for school, count in sorted_schools[:10]:
+                print(f"  {school:30s}: {count:2d}")
+
+        print(f"\nScraped at: {summary['scraped_at']}")
+        print(f"{'='*60}\n")

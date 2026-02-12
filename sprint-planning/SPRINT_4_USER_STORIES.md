@@ -1,43 +1,166 @@
-# Sprint 4: Analytics & Launch Preparation - User Stories
+# Sprint 4: PFF Data Integration & Premium Analytics - User Stories
 **Duration:** Mar 24 - Apr 6 (2 weeks)
-**Focus:** Analytics, predictive models, performance optimization, production launch
+**Focus:** Dockerization (priority), PFF scraper implementation, data reconciliation
 
 ---
 
-## US-030: Position Trend Analysis Endpoint
+## US-045: Dockerize Application for Production Deployment
 
 ### User Story
-As a **analyst**  
-I want to **analyze trends in measurables across positions year-over-year**  
-So that **I can identify how player profiles are evolving**
+As a **DevOps engineer**  
+I want to **containerize the entire application with Docker**  
+So that **the app can be deployed consistently across development, staging, and production environments**
 
 ### Description
-Create API endpoint analyzing position trends: changes in average height, weight, 40-time across recent years.
+Create comprehensive Docker setup for the entire application including backend API, data pipeline, CLI tools, and PostgreSQL database. Enable multi-environment deployments with proper volume management, networking, and configuration handling.
 
 ### Acceptance Criteria
-- [ ] Endpoint: `GET /api/analytics/trends/:position`
-- [ ] Compares 3 most recent years
-- [ ] Shows: average, trend (↑/↓/→), percent change
-- [ ] Includes: height, weight, 40-time, vertical, broad jump
-- [ ] Year-over-year comparison visualization data
-- [ ] Trends for round tiers (1st round avg, 2nd round avg, etc.)
-- [ ] Response time < 1 second
+- [ ] Dockerfile for backend API service (FastAPI)
+- [ ] Dockerfile for data pipeline service (ETL worker)
+- [ ] Dockerfile for CLI service (optional, can use backend image)
+- [ ] docker-compose.yml with all services (API, pipeline, database, redis)
+- [ ] Environment variable configuration (.env support)
+- [ ] Database initialization and migration on startup
+- [ ] Health check endpoints for container orchestration
+- [ ] Volume mounts for data persistence (cache, logs, database)
+- [ ] Build scripts work on Linux, macOS, Windows
+- [ ] Documentation for local development setup with Docker
 
 ### Technical Acceptance Criteria
-- [ ] SQL window functions for year-over-year calculation
-- [ ] Materialized view for performance
-- [ ] Redis caching (1-day TTL)
-- [ ] JSON response with trend data
+- [ ] Base image: Python 3.11 slim
+- [ ] Multi-stage builds for optimization
+- [ ] Redis service for caching
+- [ ] PostgreSQL service with proper initialization
+- [ ] Network isolation between services
+- [ ] Proper entrypoint scripts for startup
+- [ ] Logging configuration (stdout for containers)
+- [ ] Security best practices (non-root user, minimal layers)
+- [ ] .dockerignore to exclude unnecessary files
+- [ ] Works with poetry dependencies
 
 ### Tasks
-- **Backend:** Create trends endpoint
-- **Backend:** Write SQL window functions
-- **Data:** Verify data completeness for historical years
+- **DevOps:** Create Dockerfile for backend API
+- **DevOps:** Create Dockerfile for data pipeline
+- **DevOps:** Create docker-compose.yml
+- **DevOps:** Write container initialization scripts
+- **DevOps:** Create comprehensive Docker documentation
 
 ### Definition of Done
-- [ ] Trends calculated correctly
-- [ ] Performance meets target
-- [ ] Historical data validated
+- [ ] All services start and run successfully
+- [ ] Database initializes automatically
+- [ ] Services communicate correctly
+- [ ] Volumes persist data correctly
+- [ ] Environment variables work properly
+- [ ] Startup and shutdown graceful
+- [ ] Documentation complete
+
+### Effort
+- **DevOps:** 5 story points
+- **Total:** 5 story points
+
+---
+
+## US-040: PFF.com Draft Big Board Web Scraper
+
+### User Story
+As a **data engineer**  
+I want to **scrape prospect grades and rankings from PFF.com**  
+So that **analysts have access to industry-standard PFF grades for evaluation**
+
+### Description
+Build web scraper for PFF.com's Draft Big Board (https://www.pff.com/draft/big-board?season=2026). Extract prospect grades, rankings, and position-specific metrics. Integrate with existing multi-source pipeline.
+
+### Context
+**Spike-001 Outcome:** Scenario A (Low Risk, High Value)
+- PFF.com uses static HTML (no Selenium needed)
+- robots.txt permits scraping with reasonable rate limiting
+- Terms of service allow internal data extraction
+- High-value proprietary grades not available elsewhere
+
+### Acceptance Criteria
+- [ ] Scraper successfully extracts from PFF Draft Big Board
+- [ ] Extracts: prospect name, grade (overall), position grade, ranking, position
+- [ ] Handles pagination (multiple pages of prospects)
+- [ ] Data validation (grades 0-100 scale, rankings sequential)
+- [ ] Deduplicates against existing prospects
+- [ ] Respects rate limiting (3-5s delays between requests)
+- [ ] Proper User-Agent headers and robots.txt compliance
+- [ ] Logs all scrapes with timestamps and data counts
+- [ ] Fallback to cached data if scrape fails
+- [ ] Tests with sample HTML fixtures
+
+### Technical Acceptance Criteria
+- [ ] BeautifulSoup4 for HTML parsing
+- [ ] Follows same pattern as NFL.com and Yahoo Sports scrapers
+- [ ] Fuzzy matching for prospect identification
+- [ ] PFF data validation framework
+- [ ] Unit tests with HTML fixtures (90%+ coverage)
+- [ ] Integration with main ETL pipeline
+- [ ] Performance: scrape completes < 3 minutes
+
+### Tasks
+- **Data:** Build PFF.com scraper
+- **Data:** Create HTML fixtures for testing
+- **Data:** Implement grade validation
+- **Data:** Write comprehensive tests
+- **Backend:** Integrate into pipeline scheduler
+
+### Definition of Done
+- [ ] Scraper extracts all PFF data fields
+- [ ] Data validated and parsed correctly
+- [ ] Tests passing (90%+ coverage)
+- [ ] Error handling verified
+- [ ] Fallback caching working
+- [ ] Integrated into daily pipeline
+
+### Effort
+- **Data:** 6 story points
+- **Backend:** 1 story point
+- **Total:** 7 story points
+
+---
+
+## US-041: PFF Data Integration & Reconciliation
+
+### User Story
+As a **data engineer**  
+I want to **integrate PFF grades into the prospect database**  
+So that **PFF data is available for analytics and reconciliation with other sources**
+
+### Description
+Add PFF grades to prospect records, establish reconciliation rules for conflicts (PFF grades vs. ESPN grades), and track PFF-sourced data in audit trail.
+
+### Acceptance Criteria
+- [ ] New table: prospect_grades (prospect_id, source, grade_overall, grade_position, grade_date)
+- [ ] PFF grades linked to prospects via fuzzy matching (name + position + college)
+- [ ] Handle duplicates (same prospect appears multiple times)
+- [ ] Reconciliation rules: PFF authoritative for "grade" field
+- [ ] Audit trail: track all grade changes with source
+- [ ] Daily updates: PFF grades refresh with other sources
+- [ ] Handle missing grades (partial data acceptable)
+- [ ] Error logging for unmatched prospects
+
+### Technical Acceptance Criteria
+- [ ] Database schema for prospect_grades table
+- [ ] Fuzzy matching algorithm (rapidfuzz)
+- [ ] Transaction handling for atomicity
+- [ ] Audit logging integration
+- [ ] Batch insert with error recovery
+- [ ] Unit tests for reconciliation logic
+
+### Tasks
+- **Backend:** Design prospect_grades schema
+- **Backend:** Create migration for new table
+- **Data:** Implement fuzzy matching
+- **Backend:** Build grade reconciliation logic
+- **Backend:** Integrate into pipeline
+- **Data:** Write reconciliation tests
+
+### Definition of Done
+- [ ] Schema created and migrated
+- [ ] PFF grades loading into database
+- [ ] Reconciliation rules working
+- [ ] Audit trail complete
 - [ ] Tests passing
 
 ### Effort
@@ -47,215 +170,35 @@ Create API endpoint analyzing position trends: changes in average height, weight
 
 ---
 
-## US-031: Injury Risk Assessment
+## US-042: PFF Grades in Analytics Endpoints
 
 ### User Story
 As a **analyst**  
-I want to **assess injury risk profiles for prospects**  
-So that **I can factor injury history into evaluations**
+I want to **view PFF grades alongside other prospect metrics**  
+So that **I can make holistic evaluations using industry-standard grades**
 
 ### Description
-Create endpoint aggregating injury data: injury frequency, history summaries, positional injury patterns.
+Add PFF grades to existing analytics endpoints and create new PFF-specific endpoints for grade-based analysis.
 
 ### Acceptance Criteria
-- [ ] Endpoint: `GET /api/analytics/injury-risk/:prospect_id`
-- [ ] Shows: reported injuries, severity, position-specific patterns
-- [ ] Risk percentile: where does this player fall vs position group
-- [ ] Historical comparison: injury frequency by position
-- [ ] Injury recurrence risk (if multiple injuries)
-- [ ] Related prospects with similar injury history
+- [ ] Endpoint: `GET /api/prospects/:id` includes pff_grade fields
+- [ ] New endpoint: `GET /api/analytics/pff-grades/:position` (grade distribution by position)
+- [ ] New endpoint: `GET /api/analytics/grade-correlations` (PFF vs. position tier)
+- [ ] Grade comparison: PFF grade vs. actual draft position (for historical validation)
+- [ ] Grade percentiles: where does prospect's PFF grade rank vs. position group
+- [ ] Response time < 500ms (cached)
 
 ### Technical Acceptance Criteria
-- [ ] Injury data model expansion
-- [ ] Calculation of injury risk percentiles
-- [ ] Positional injury pattern database
-- [ ] Related prospect queries
+- [ ] SQL queries for grade analytics
+- [ ] Materialized views for performance
+- [ ] Redis caching (1-day TTL)
+- [ ] JSON response formatting
 
 ### Tasks
-- **Data:** Analyze injury data, create patterns
-- **Backend:** Create injury risk endpoint
-- **Backend:** Implement percentile calculations
-
-### Definition of Done
-- [ ] Injury data modeled
-- [ ] Risk assessments calculated
-- [ ] Endpoint working
+- [ ] PFF grades visible in prospect detail
+- [ ] Grade analytics endpoints working
+- [ ] Performance meets targets
 - [ ] Tests passing
-
-### Effort
-- **Backend:** 4 story points
-- **Data:** 3 story points
-- **Total:** 7 story points
-
----
-
-## US-032: Production Readiness Prediction
-
-### User Story
-As a **analyst**  
-I want to **predict which prospects are ready for immediate NFL production**  
-So that **I can identify immediate impact players vs. development prospects**
-
-### Description
-Implement scoring algorithm predicting production readiness based on measurables and college performance.
-
-### Acceptance Criteria
-- [ ] Endpoint: `GET /api/analytics/production-readiness/:prospect_id`
-- [ ] Returns: 0-100 score, confidence level, key factors
-- [ ] Factors: age, experience (college years), production metrics
-- [ ] Breakout by position (edge, DB, QB different criteria)
-- [ ] Comparison to peers (percentile)
-- [ ] Historical accuracy: show accuracy for past years
-- [ ] Explanations for top/bottom factors
-
-### Technical Acceptance Criteria
-- [ ] Score calculation based on weighted factors
-- [ ] Position-specific scoring models
-- [ ] Feature engineering from raw data
-- [ ] Historical model validation
-
-### Tasks
-- **Backend:** Design scoring algorithm
-- **Backend:** Create endpoint
-- **Data:** Validate with historical data
-
-### Definition of Done
-- [ ] Scoring working
-- [ ] Explanations clear
-- [ ] Historical accuracy verified
-- [ ] Endpoint tested
-
-### Effort
-- **Backend:** 3 story points
-- **Data:** 3 story points
-- **Total:** 6 story points
-
----
-
-## US-033: Batch Analytics Report Generation
-
-### User Story
-As a **analyst**  
-I want to **generate comprehensive analytics reports**  
-So that **I can share analysis with stakeholders**
-
-### Description
-Create reports combining multiple analyses: position summaries, trend analysis, comparative rankings.
-
-### Acceptance Criteria
-- [ ] Report generation endpoint: `POST /api/reports/generate`
-- [ ] Report types: position summary, prospect comparison, trend analysis
-- [ ] Output formats: PDF, Excel, HTML
-- [ ] Includes: tables, charts, executive summary
-- [ ] Can customize: which positions, which metrics, date ranges
-- [ ] Saved reports: retrieve historical reports
-- [ ] Generation time < 30 seconds
-
-### Technical Acceptance Criteria
-- [ ] ReportLab or similar for PDF generation
-- [ ] Excel generation with openpyxl
-- [ ] HTML templates for reports
-- [ ] Async report generation (queue for large reports)
-
-### Tasks
-- **Backend:** Create report generation endpoint
-- **Backend:** Implement PDF generation
-- **Backend:** Implement Excel generation
-- **Frontend:** Create report customization UI (Jupyter)
-
-### Definition of Done
-- [ ] Reports generating correctly
-- [ ] All formats working
-- [ ] Customization functional
-- [ ] Performance acceptable
-
-### Effort
-- **Backend:** 5 story points
-- **Frontend:** 2 story points
-- **Total:** 7 story points
-
----
-
-## US-034: API Performance Optimization
-
-### User Story
-As a **system administrator**  
-I want to **optimize API response times**  
-So that **analysts have fast data access**
-
-### Description
-Profile, identify bottlenecks, and optimize API endpoints for production performance.
-
-### Acceptance Criteria
-- [ ] All endpoints: response time < 1 second (p95)
-- [ ] Complex queries: < 2 seconds
-- [ ] Analytics endpoints: < 500ms with caching
-- [ ] Database queries optimized (EXPLAIN analysis)
-- [ ] Proper indexing on all query columns
-- [ ] Connection pooling configured
-- [ ] Load testing: supports 10 concurrent users
-
-### Technical Acceptance Criteria
-- [ ] Query profiling and optimization
-- [ ] Database index strategy
-- [ ] Connection pool tuning
-- [ ] Caching layer optimization
-- [ ] Load testing script
-
-### Tasks
-- **Backend:** Profile queries
-- **Backend:** Create missing indexes
-- **Backend:** Optimize slow queries
-- **Backend:** Load testing
-
-### Definition of Done
-- [ ] Performance targets met
-- [ ] Load test passing
-- [ ] Indexes documented
-- [ ] Monitoring alerts set
-
-### Effort
-- **Backend:** 5 story points
-- **Total:** 5 story points
-
----
-
-## US-035: Monitoring and Alerting
-
-### User Story
-As a **system administrator**  
-I want to **monitor system health and receive alerts**  
-So that **issues are caught quickly**
-
-### Description
-Implement monitoring for API health, database performance, data quality, and error rates.
-
-### Acceptance Criteria
-- [ ] Dashboard showing: uptime, response times, error rates
-- [ ] Database monitoring: query times, connection count
-- [ ] Data quality monitoring: record counts, completeness
-- [ ] Error tracking and alerting
-- [ ] Alerts: email on critical issues
-- [ ] Performance trends: identify degradation
-- [ ] Health check endpoint: `GET /health`
-
-### Technical Acceptance Criteria
-- [ ] Prometheus for metrics collection
-- [ ] Health check endpoint
-- [ ] Email alerting configuration
-- [ ] Logging aggregation
-- [ ] Simple dashboard (HTML)
-
-### Tasks
-- **Backend:** Implement health monitoring
-- **Backend:** Set up alerting
-- **Backend:** Create dashboard
-
-### Definition of Done
-- [ ] Monitoring operational
-- [ ] Alerts working
-- [ ] Dashboard accessible
-- [ ] Issues being tracked
 
 ### Effort
 - **Backend:** 4 story points
@@ -263,71 +206,78 @@ Implement monitoring for API health, database performance, data quality, and err
 
 ---
 
-## US-036: Production Deployment and Launch
-
 ### User Story
-As a **project lead**  
-I want to **deploy the analytics platform to production**  
-So that **the team can start using it for evaluations**
+As a **DevOps engineer**  
+I want to **containerize the entire application with Docker**  
+So that **the app can be deployed consistently across development, staging, and production environments**
 
 ### Description
-Final deployment: database migration, API deployment, Jupyter notebook setup, documentation.
+Create comprehensive Docker setup for the entire application including backend API, data pipeline, CLI tools, and PostgreSQL database. Enable multi-environment deployments with proper volume management, networking, and configuration handling.
 
 ### Acceptance Criteria
-- [ ] Production database deployed and optimized
-- [ ] API endpoints verified against checklist
-- [ ] Jupyter notebooks available in production environment
-- [ ] Documentation complete and accessible
-- [ ] Team trained on platform usage
-- [ ] Backup and recovery procedures documented
-- [ ] Launch communication sent
-- [ ] Initial user feedback collected
+- [ ] Dockerfile for backend API service (FastAPI)
+- [ ] Dockerfile for data pipeline service (ETL worker)
+- [ ] Dockerfile for CLI service (optional, can use backend image)
+- [ ] docker-compose.yml with all services (API, pipeline, database, redis)
+- [ ] Environment variable configuration (.env support)
+- [ ] Database initialization and migration on startup
+- [ ] Health check endpoints for container orchestration
+- [ ] Volume mounts for data persistence (cache, logs, database)
+- [ ] Build scripts work on Linux, macOS, Windows
+- [ ] Documentation for local development setup with Docker
 
 ### Technical Acceptance Criteria
-- [ ] Production database configured
-- [ ] API deployed on production server
-- [ ] SSL certificates installed
-- [ ] Environment configuration locked
-- [ ] Backup scripts tested
-- [ ] Disaster recovery tested
-- [ ] Monitoring active
+- [ ] Base image: Python 3.11 slim
+- [ ] Multi-stage builds for optimization
+- [ ] Redis service for caching
+- [ ] PostgreSQL service with proper initialization
+- [ ] Network isolation between services
+- [ ] Proper entrypoint scripts for startup
+- [ ] Logging configuration (stdout for containers)
+- [ ] Security best practices (non-root user, minimal layers)
+- [ ] .dockerignore to exclude unnecessary files
+- [ ] Works with poetry dependencies
 
 ### Tasks
-- **Backend:** Production deployment
-- **Backend:** Verify all endpoints
-- **Frontend:** Finalize documentation
-- **Data:** Database migration and optimization
-- **Project:** User training
+- **DevOps:** Create Dockerfile for backend API
+- **DevOps:** Create Dockerfile for data pipeline
+- **DevOps:** Create docker-compose.yml
+- **DevOps:** Write container initialization scripts
+- **DevOps:** Create comprehensive Docker documentation
 
 ### Definition of Done
-- [ ] Platform live and accessible
-- [ ] All checks passed
-- [ ] Team can access
-- [ ] No critical issues
+- [ ] All services start and run successfully
+- [ ] Database initializes automatically
+- [ ] Services communicate correctly
+- [ ] Volumes persist data correctly
+- [ ] Environment variables work properly
+- [ ] Startup and shutdown graceful
+- [ ] Documentation complete
 
 ### Effort
-- **Backend:** 3 story points
-- **Data:** 2 story points
-- **Frontend:** 1 story point
-- **Total:** 6 story points
+- **DevOps:** 5 story points
+- **Total:** 5 story points
 
 ---
 
 ## Sprint 4 Summary
 
-**Total Story Points:** ~46 points
+**Total Story Points:** ~22 points (refocused on critical work)
+
+**Priority Focus:**
+1. **US-045** (Dockerize - 5 pts) - TOP PRIORITY for deployment readiness
+2. **US-040** (PFF Scraper - 7 pts) - Fix critical bug, complete integration
+3. **US-041** (Data Integration - 6 pts) - Depends on US-040
+4. **US-042** (Analytics Endpoints - 4 pts) - Depends on US-041
 
 **Key Outcomes:**
-- ✅ Position trend analysis available
-- ✅ Injury risk assessment functional
-- ✅ Production readiness scoring active
-- ✅ Batch reports generating
-- ✅ API performance optimized
-- ✅ Monitoring and alerting operational
-- ✅ Platform launched to production
-- ✅ Team trained and using platform
+- ✅ Application containerized with Docker (deployment ready)
+- ✅ PFF.com scraper operational & bug fixed
+- ✅ PFF grades integrated into database
+- ✅ PFF data visible in analytics endpoints
 
-**Post-Sprint Activities:**
-- Monitor system performance
-- Gather user feedback
-- Plan enhancements for 2.0 release
+**Moved to Sprint 5:**
+- US-043 (Grade Conflict Dashboard - 4 pts)
+- US-044 (Data Quality Enhancement - 4 pts)
+
+**Reason:** Focus on critical bug fixes, Dockerization, and core data flow

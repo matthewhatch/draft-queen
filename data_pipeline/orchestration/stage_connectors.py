@@ -324,3 +324,58 @@ class SnapshotConnector(PipelineConnector):
         except Exception as e:
             logger.error(f"Snapshot creation failed: {e}")
             raise
+
+
+class PFFConnector(PipelineConnector):
+    """Connector for PFF.com Draft Big Board scraper stage."""
+
+    def __init__(self, scraper_instance=None):
+        """Initialize PFF connector.
+
+        Args:
+            scraper_instance: Instance of PFFScraper (optional for testing)
+        """
+        self.scraper = scraper_instance
+
+    async def execute(self) -> Dict[str, Any]:
+        """Execute PFF.com scraper.
+
+        Returns:
+            Dictionary with:
+                - records_processed: Total prospects scraped
+                - records_succeeded: Prospects successfully processed
+                - records_failed: Prospects that failed
+                - data: Raw scraped prospect data
+                - errors: List of errors encountered
+        """
+        logger.info("Executing PFF.com scraper stage")
+
+        try:
+            if self.scraper is None:
+                logger.warning("PFF scraper not configured, using mock")
+                return {
+                    "records_processed": 0,
+                    "records_succeeded": 0,
+                    "records_failed": 0,
+                    "data": {},
+                    "errors": ["Scraper not configured"],
+                }
+
+            # Call actual scraper - scrape all pages
+            prospects = await self.scraper.scrape_all_pages(max_pages=10)
+            processed = len(prospects)
+            succeeded = sum(1 for p in prospects if p.get("name"))
+
+            logger.info(f"PFF scraper completed: {processed} prospects extracted")
+
+            return {
+                "records_processed": processed,
+                "records_succeeded": succeeded,
+                "records_failed": processed - succeeded,
+                "data": {"prospects": prospects},
+                "errors": [],
+            }
+        except Exception as e:
+            logger.error(f"PFF scraper failed: {e}")
+            raise
+
