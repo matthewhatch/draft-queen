@@ -331,3 +331,72 @@ class ProspectBatchValidator:
                 })
 
         return valid, invalid
+
+
+# ============================================================================
+# PFF-specific validators for grade integration (US-041)
+# ============================================================================
+
+PFF_TO_DB_POSITION_MAP = {
+    "LT": "OL", "LG": "OL", "C": "OL", "RG": "OL", "RT": "OL", "OT": "OL",
+    "DT": "DL", "DE": "DL",
+    "SS": "DB", "FS": "DB", "CB": "DB",
+    "EDGE": "EDGE", "LB": "LB",
+    "QB": "QB", "RB": "RB", "FB": "FB", "WR": "WR", "TE": "TE",
+    "K": "K", "P": "P", "LS": "OL",
+}
+
+
+def map_pff_position_to_db(pff_position: str) -> Optional[str]:
+    """Map a PFF-native position to a DB-compatible position code.
+    
+    Args:
+        pff_position: PFF position (e.g., 'LT', 'CB', 'EDGE')
+        
+    Returns:
+        DB-compatible position or None if unmappable
+    """
+    if not pff_position:
+        return None
+    return PFF_TO_DB_POSITION_MAP.get(pff_position.upper().strip())
+
+
+def normalize_pff_grade(pff_grade: float) -> float:
+    """Convert PFF 0–100 grade to 5.0–10.0 scale.
+    
+    Formula: normalized = 5.0 + (pff_grade / 100.0) * 5.0
+    - PFF 0 → 5.0
+    - PFF 50 → 7.5
+    - PFF 100 → 10.0
+    
+    Args:
+        pff_grade: Raw PFF grade (0-100)
+        
+    Returns:
+        Normalized grade (5.0-10.0)
+    """
+    clamped = max(0.0, min(100.0, float(pff_grade)))
+    return round(5.0 + (clamped / 100.0) * 5.0, 1)
+
+
+class PFFDataValidator:
+    """Validators for PFF prospect data (grade integration)."""
+    
+    @staticmethod
+    def validate_batch(prospects: List[Dict]) -> List[Dict]:
+        """Validate and filter PFF prospects for grade loading.
+        
+        Args:
+            prospects: List of raw PFF prospect dicts
+            
+        Returns:
+            List of validated prospects (filtered for required fields)
+        """
+        validated = []
+        for prospect in prospects:
+            # Check required fields for grade integration
+            if not prospect.get("name") or not prospect.get("grade"):
+                logger.debug(f"Skipping prospect missing name or grade: {prospect.get('name', 'UNKNOWN')}")
+                continue
+            validated.append(prospect)
+        return validated

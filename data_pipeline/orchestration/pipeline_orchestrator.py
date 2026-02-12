@@ -36,6 +36,7 @@ class PipelineStage(Enum):
     YAHOO_SCRAPE = "yahoo_scrape"
     ESPN_SCRAPE = "espn_scrape"
     PFF_SCRAPE = "pff_scrape"
+    PFF_GRADE_LOAD = "pff_grade_load"
     RECONCILIATION = "reconciliation"
     QUALITY_VALIDATION = "quality_validation"
     SNAPSHOT = "snapshot"

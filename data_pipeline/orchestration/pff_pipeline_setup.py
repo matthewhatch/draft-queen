@@ -17,6 +17,7 @@ from data_pipeline.orchestration.pipeline_orchestrator import (
 )
 from data_pipeline.orchestration.stage_connectors import (
     PFFConnector,
+    PFFGradeLoadConnector,
     NFLComConnector,
     YahooConnector,
     ESPNConnector,
@@ -60,7 +61,17 @@ class PFFPipelineSetup:
             order=2,  # After NFL.com (order 1), before Yahoo (order 3)
         )
 
+        # Register PFF grade loading stage (after PFF scraper, before reconciliation)
+        pff_grade_connector = PFFGradeLoadConnector()
+        orchestrator.register_stage(
+            stage=PipelineStage.PFF_GRADE_LOAD,
+            connector=pff_grade_connector,
+            order=45,  # After PFF_SCRAPE (order 2), before RECONCILIATION
+        )
+        )
+
         logger.info("✓ PFF scraper registered in pipeline")
+        logger.info("✓ PFF grade loading registered in pipeline")
         return orchestrator
 
     @staticmethod

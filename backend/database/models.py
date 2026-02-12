@@ -51,6 +51,7 @@ class Prospect(Base):
     stats = relationship("ProspectStats", back_populates="prospect", cascade="all, delete-orphan")
     injuries = relationship("ProspectInjury", back_populates="prospect", cascade="all, delete-orphan")
     rankings = relationship("ProspectRanking", back_populates="prospect", cascade="all, delete-orphan")
+    grades = relationship("ProspectGrade", back_populates="prospect", cascade="all, delete-orphan")
     
     # Constraints
     __table_args__ = (
@@ -365,3 +366,7 @@ class DataQualityReport(Base):
     __table_args__ = (
         Index("idx_quality_report_date", "report_date"),
     )
+
+
+# Import ProspectGrade after Base and Prospect are defined to avoid circular imports
+from data_pipeline.models.prospect_grades import ProspectGrade  # noqa: E402, F401

@@ -379,3 +379,66 @@ class PFFConnector(PipelineConnector):
             logger.error(f"PFF scraper failed: {e}")
             raise
 
+
+class PFFGradeLoadConnector(PipelineConnector):
+    """Connector for PFF grade integration stage.
+    
+    Takes output from PFF scraper and loads grades into the database
+    using fuzzy matching to link to existing prospects.
+    """
+
+    def __init__(self, pff_prospects: list[dict] = None):
+        """Initialize PFF grade load connector.
+
+        Args:
+            pff_prospects: List of raw PFF prospect dicts from scraper
+        """
+        self.pff_prospects = pff_prospects or []
+
+    async def execute(self) -> Dict[str, Any]:
+        """Execute PFF grade loading stage.
+
+        Returns:
+            Dictionary with:
+                - records_processed: Total PFF prospects
+                - records_succeeded: Matched and loaded
+                - records_failed: Unmatched or errored
+                - data: Loading statistics
+                - errors: List of errors encountered
+        """
+        logger.info("Executing PFF grade loading stage")
+
+        try:
+            from backend.database.connection import DatabaseManager
+            from data_pipeline.loaders.pff_grade_loader import PFFGradeLoader
+
+            if not self.pff_prospects:
+                logger.warning("No PFF prospects provided for grade loading")
+                return {
+                    "records_processed": 0,
+                    "records_succeeded": 0,
+                    "records_failed": 0,
+                    "data": {},
+                    "errors": ["No PFF data available"],
+                }
+
+            with DatabaseManager().get_session() as session:
+                loader = PFFGradeLoader(session)
+                stats = loader.load(self.pff_prospects)
+
+            logger.info(
+                f"PFF grade loading completed: "
+                f"matched={stats['matched']}, inserted={stats['inserted']}, "
+                f"updated={stats['updated']}, unmatched={stats['unmatched']}"
+            )
+
+            return {
+                "records_processed": stats["total"],
+                "records_succeeded": stats["inserted"] + stats["updated"],
+                "records_failed": stats["unmatched"] + stats["errors"],
+                "data": {"stats": stats},
+                "errors": [] if stats["errors"] == 0 else [f"{stats['errors']} errors during load"],
+            }
+        except Exception as e:
+            logger.error(f"PFF grade loading failed: {e}")
+            raise

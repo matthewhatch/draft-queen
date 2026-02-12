@@ -11,6 +11,7 @@ import logging
 
 # Import models for autogeneration
 from backend.database.models import Base
+from data_pipeline.models.prospect_grades import ProspectGrade  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config

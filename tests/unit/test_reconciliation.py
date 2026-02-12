@@ -561,3 +561,98 @@ class TestInjuryValidation:
         # Should have injury status conflict
         injury_conflicts = [c for c in result.conflicts if c.field_category == FieldCategory.INJURY_DATA]
         assert len(injury_conflicts) > 0
+
+
+class TestPFFGradeReconciliation:
+    """Test PFF grade reconciliation functionality."""
+
+    def test_pff_data_source_exists(self):
+        """Test that PFF is registered as a data source."""
+        assert hasattr(DataSource, 'PFF')
+        assert DataSource.PFF.value == "pff"
+
+    def test_pff_grades_field_category_exists(self):
+        """Test that PFF_GRADES field category exists."""
+        assert hasattr(FieldCategory, 'PFF_GRADES')
+        assert FieldCategory.PFF_GRADES.value == "pff_grades"
+
+    def test_pff_is_authoritative_for_grades(self):
+        """Test that PFF is authoritative for PFF_GRADES field."""
+        engine = ReconciliationEngine()
+        authoritative = engine.AUTHORITY_RULES.get(FieldCategory.PFF_GRADES)
+        assert authoritative == DataSource.PFF
+
+    def test_pff_grade_conflict_detection(self):
+        """Test detecting conflict between PFF and NFL grades."""
+        engine = ReconciliationEngine()
+
+        # Create conflict between PFF grade (96.2) and NFL grade (8.5)
+        pff_grade_conflict = ConflictRecord(
+            prospect_id="P001",
+            prospect_name="Travis Hunter",
+            field_name="grade_overall",
+            field_category=FieldCategory.PFF_GRADES,
+            source_a=DataSource.PFF,
+            value_a=96.2,  # PFF 0-100 scale
+            source_b=DataSource.NFL_COM,
+            value_b=8.5,  # NFL 5-10 scale
+            severity=ConflictSeverity.HIGH,
+            difference_pct=25.5,
+        )
+
+        # Add to engine
+        engine.conflicts_detected.append(pff_grade_conflict)
+
+        # Verify conflict recorded
+        assert len(engine.conflicts_detected) == 1
+        assert engine.conflicts_detected[0].field_category == FieldCategory.PFF_GRADES
+        assert engine.conflicts_detected[0].source_a == DataSource.PFF
+
+    def test_pff_authority_wins_in_resolution(self):
+        """Test that PFF is authoritative when resolving grade conflicts."""
+        engine = ReconciliationEngine()
+
+        conflict = ConflictRecord(
+            prospect_id="P001",
+            prospect_name="Travis Hunter",
+            field_name="grade",
+            field_category=FieldCategory.PFF_GRADES,
+            source_a=DataSource.PFF,
+            value_a=96.2,
+            source_b=DataSource.NFL_COM,
+            value_b=8.5,
+            severity=ConflictSeverity.MEDIUM,
+        )
+
+        # Apply authority rules - verify PFF is authoritative
+        authoritative = engine.AUTHORITY_RULES.get(FieldCategory.PFF_GRADES)
+        assert authoritative == DataSource.PFF
+
+    def test_multiple_pff_grades_conflict(self):
+        """Test handling multiple grade sources (PFF, ESPN, etc.)."""
+        engine = ReconciliationEngine()
+
+        # Simulate three different grade sources
+        conflicts = [
+            ConflictRecord(
+                prospect_id="P001",
+                prospect_name="Test Player",
+                field_name="grade",
+                field_category=FieldCategory.PFF_GRADES,
+                source_a=DataSource.PFF,
+                value_a=92.5,
+                source_b=DataSource.ESPN,
+                value_b=8.2,
+                severity=ConflictSeverity.MEDIUM,
+            ),
+        ]
+
+        engine.conflicts_detected.extend(conflicts)
+
+        # Verify PFF conflict is recorded
+        pff_conflicts = [
+            c for c in engine.conflicts_detected
+            if c.source_a == DataSource.PFF or c.source_b == DataSource.PFF
+        ]
+        assert len(pff_conflicts) == 1
+

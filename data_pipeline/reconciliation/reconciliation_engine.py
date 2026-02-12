@@ -25,6 +25,7 @@ class DataSource(Enum):
     NFL_COM = "nfl.com"
     YAHOO_SPORTS = "yahoo_sports"
     ESPN = "espn"
+    PFF = "pff"
     MANUAL_OVERRIDE = "manual_override"
 
 
@@ -36,6 +37,7 @@ class FieldCategory(Enum):
     COLLEGE_STATS = "college_stats"  # Passing yards, receptions, etc.
     INJURY_DATA = "injury_data"  # Injury type, severity, return date
     DRAFT_INFO = "draft_info"  # Grade, round projection
+    PFF_GRADES = "pff_grades"  # PFF proprietary grades
     PERSONAL_INFO = "personal_info"  # Name, position, college
 
 
@@ -133,6 +135,7 @@ class ReconciliationEngine:
         FieldCategory.COLLEGE_STATS: DataSource.YAHOO_SPORTS,
         FieldCategory.INJURY_DATA: DataSource.ESPN,
         FieldCategory.DRAFT_INFO: DataSource.NFL_COM,
+        FieldCategory.PFF_GRADES: DataSource.PFF,
         FieldCategory.PERSONAL_INFO: DataSource.NFL_COM,
     }
 
@@ -160,6 +163,7 @@ class ReconciliationEngine:
         nfl_data: Optional[Dict[str, Any]] = None,
         yahoo_data: Optional[Dict[str, Any]] = None,
         espn_data: Optional[Dict[str, Any]] = None,
+        pff_data: Optional[Dict[str, Any]] = None,
     ) -> ReconciliationResult:
         """Reconcile prospect data across sources.
 
@@ -169,6 +173,7 @@ class ReconciliationEngine:
             nfl_data: Data from NFL.com source
             yahoo_data: Data from Yahoo Sports source
             espn_data: Data from ESPN source
+            pff_data: Data from PFF source (grades)
 
         Returns:
             ReconciliationResult with conflicts and resolutions
@@ -194,6 +199,11 @@ class ReconciliationEngine:
         # Injury data (ESPN cross-check)
         if espn_data:
             self._validate_injury_data(prospect_id, prospect_name, espn_data, result)
+
+        # PFF grades (if provided, PFF is authoritative for grade field)
+        if pff_data:
+            # PFF grades are authoritative per AUTHORITY_RULES
+            logger.debug(f"Prospect {prospect_name}: PFF grade is authoritative")
 
         # Apply authority rules to resolve conflicts
         self._apply_authority_rules(result)
