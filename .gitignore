@@ -77,3 +77,5 @@ temp/
 tmp/
 cache/
 data/draft_queue*.json
+page_1.html
+debug_output.txt

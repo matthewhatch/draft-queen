@@ -1,0 +1,72 @@
+# Multi-stage Dockerfile for Data Pipeline ETL Worker
+# Stage 1: Builder
+FROM python:3.11-slim as builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.7.0
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv && \
+    . /opt/venv/bin/activate && \
+    poetry install --without dev --no-root
+
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+LABEL maintainer="NFL Draft Queen Team"
+LABEL description="Data Pipeline ETL Worker for NFL Draft Analysis Platform"
+
+# Install runtime dependencies including browser support for Playwright
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    curl \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libxkbcommon0 \
+    libgbm1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Create directories for cache and logs
+RUN mkdir -p /app/data/cache /app/logs && \
+    chown -R appuser:appuser /app/data /app/logs
+
+# Set environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+
+# Switch to non-root user
+USER appuser
+
+# Health check - verify the pipeline process is alive
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
+    CMD test -f /tmp/pipeline_heartbeat && find /tmp/pipeline_heartbeat -mmin -2 | grep -q . || exit 1
+
+# Default command - runs pipeline orchestrator
+CMD ["python", "-m", "data_pipeline.orchestration.pff_pipeline_setup"]
