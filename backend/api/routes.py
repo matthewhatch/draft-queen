@@ -617,10 +617,10 @@ async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description
     """Trigger pipeline execution."""
     try:
         import threading
-        from data_pipeline.sources.yahoo_sports_scraper import YahooSportsConnector
         from backend.database import db
-        from backend.database.models import Prospect
+        from backend.database.models import Prospect, ProspectGrade
         from datetime import datetime
+        import asyncio
         
         execution_id = f"exec_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
         
@@ -630,45 +630,62 @@ async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description
                 session = db.SessionLocal()
                 logger.info(f"Pipeline execution {execution_id} started")
                 
-                stages_to_run = stages or ["nfl"]
+                stages_to_run = stages or ["pff"]
                 prospects_count = 0
                 
-                # Run NFL Draft connector
-                if "nfl" in stages_to_run or "yahoo" in stages_to_run:
-                    logger.info("Running NFL Draft data fetch...")
-                    from data_pipeline.sources.nfl_draft_connector import NFLDraftConnector
-                    nfl_connector = NFLDraftConnector()
-                    prospects = nfl_connector.fetch_prospects()
-                    logger.info(f"Fetched {len(prospects)} prospects from NFL Draft sources")
+                # Run PFF.com scraper as the primary source
+                if "pff" in stages_to_run:
+                    logger.info("Running PFF.com Draft Big Board scraper...")
+                    from data_pipeline.scrapers.pff_scraper import PFFScraper
                     
-                    # Save prospects to database
+                    # Create and run PFF scraper
+                    scraper = PFFScraper(season=2026, headless=True, cache_enabled=True)
+                    prospects = asyncio.run(scraper.scrape_all_pages(max_pages=5))
+                    logger.info(f"Fetched {len(prospects)} prospects from PFF.com")
+                    
+                    # Save prospects and grades to database
                     for prospect_data in prospects:
                         try:
                             # Check if prospect already exists
                             existing = session.query(Prospect).filter(
                                 (Prospect.name == prospect_data.get("name")) &
-                                (Prospect.college == prospect_data.get("college"))
+                                (Prospect.college == prospect_data.get("school"))
                             ).first()
                             
                             if not existing:
                                 prospect = Prospect(
                                     name=prospect_data.get("name", ""),
                                     position=prospect_data.get("position", ""),
-                                    college=prospect_data.get("college", ""),
+                                    college=prospect_data.get("school", ""),
                                     height=prospect_data.get("height"),
                                     weight=prospect_data.get("weight"),
-                                    draft_grade=prospect_data.get("draft_grade"),
                                     status="active",
-                                    data_source="nfl_draft"
+                                    data_source="pff"
                                 )
                                 session.add(prospect)
+                                session.flush()  # Get the ID
+                                
+                                # Add PFF grade
+                                if prospect_data.get("grade"):
+                                    try:
+                                        grade = ProspectGrade(
+                                            prospect_id=prospect.id,
+                                            source="pff",
+                                            grade=float(prospect_data.get("grade")),
+                                            grade_class=prospect_data.get("class", "")
+                                        )
+                                        session.add(grade)
+                                    except (ValueError, TypeError) as e:
+                                        logger.debug(f"Could not save grade for {prospect_data.get('name')}: {e}")
+                                
                                 prospects_count += 1
                         except Exception as e:
                             logger.warning(f"Failed to save prospect {prospect_data.get('name')}: {e}")
+                            session.rollback()
                             continue
                     
                     session.commit()
-                    logger.info(f"Saved {prospects_count} new prospects to database")
+                    logger.info(f"Saved {prospects_count} new prospects from PFF to database")
                 
                 logger.info(f"Pipeline execution {execution_id} completed. Total prospects: {prospects_count}")
                 session.close()

@@ -51,14 +51,14 @@ def status(ctx):
 
 
 @pipeline.command()
-@click.option("--stages", multiple=True, help="Specific stages to run (yahoo, espn, reconciliation, quality, snapshot)")
+@click.option("--stages", multiple=True, help="Specific stages to run (currently only: pff)")
 @click.pass_context
 def run(ctx, stages):
     """Trigger immediate pipeline execution.
     
     Example:
         $ dq pipeline run
-        $ dq pipeline run --stages yahoo --stages espn
+        $ dq pipeline run --stages pff
     """
     from cli.client import APIClient
     

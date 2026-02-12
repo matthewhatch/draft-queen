@@ -186,18 +186,15 @@ Output includes:
 Trigger immediate pipeline execution:
 
 ```bash
-# Run all stages
+# Run PFF scraper (default and only source)
 dq pipeline run
 
-# Run specific stages
-dq pipeline run --stages yahoo
-dq pipeline run --stages yahoo --stages espn
+# Explicitly specify PFF stage
+dq pipeline run --stages pff
 ```
 
 Available stages:
-- `yahoo` - Yahoo Sports scraper
-- `espn` - ESPN injury data
-- `reconciliation` - Data reconciliation
+- `pff` - PFF.com Draft Big Board scraper (primary source)
 - `quality` - Quality rules evaluation
 - `snapshot` - Historical snapshot
 
