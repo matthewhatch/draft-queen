@@ -639,28 +639,56 @@ async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description
                     logger.info("Running PFF.com Draft Big Board scraper...")
                     from data_pipeline.scrapers.pff_scraper import PFFScraper
                     
-                    # Create and run PFF scraper using cache first
+                    # Create scraper with cache enabled (for both reading and writing)
                     scraper = PFFScraper(season=2026, headless=True, cache_enabled=True)
                     
-                    # Try to load from cache first (use cached prospects if available)
-                    prospects = []
-                    for page_num in range(1, 6):  # Try up to 5 pages
-                        page_prospects = scraper._load_cache(page_num)
-                        if page_prospects:
-                            logger.info(f"Loaded {len(page_prospects)} prospects from cache for page {page_num}")
-                            prospects.extend(page_prospects)
+                    # Run async scraper to fetch all pages
+                    try:
+                        logger.info("Starting PFF scraper to fetch all available pages...")
+                        # Run asyncio in the background thread properly
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        prospects = loop.run_until_complete(scraper.scrape_all_pages(max_pages=50))
+                        loop.close()
+                        
+                        if prospects:
+                            logger.info(f"Successfully scraped {len(prospects)} prospects from PFF.com")
                         else:
-                            logger.debug(f"No cache for page {page_num}, skipping (use test_pff_scraper.py to populate cache)")
-                            break
+                            logger.warning("No prospects returned from scraper, trying cache fallback...")
+                            # Try to load from cache as fallback
+                            prospects = []
+                            for page_num in range(1, 6):
+                                page_prospects = scraper._load_cache(page_num)
+                                if page_prospects:
+                                    logger.info(f"Loaded {len(page_prospects)} prospects from cache (page {page_num})")
+                                    prospects.extend(page_prospects)
+                                else:
+                                    break
+                            
+                            if not prospects:
+                                logger.warning("No PFF cache found. Using mock prospects from NFL connector as fallback.")
+                                from data_pipeline.sources.nfl_draft_connector import NFLDraftConnector
+                                nfl_connector = NFLDraftConnector()
+                                prospects = nfl_connector.fetch_prospects()
                     
-                    # If no cache, use mock prospects for testing
-                    if not prospects:
-                        logger.warning("No PFF cache found. Using mock prospects from NFL connector as fallback.")
-                        from data_pipeline.sources.nfl_draft_connector import NFLDraftConnector
-                        nfl_connector = NFLDraftConnector()
-                        prospects = nfl_connector.fetch_prospects()
+                    except Exception as e:
+                        logger.warning(f"Scraper error: {e}. Falling back to cache...")
+                        prospects = []
+                        for page_num in range(1, 6):
+                            page_prospects = scraper._load_cache(page_num)
+                            if page_prospects:
+                                logger.info(f"Loaded {len(page_prospects)} prospects from cache (page {page_num})")
+                                prospects.extend(page_prospects)
+                            else:
+                                break
+                        
+                        if not prospects:
+                            logger.warning("No PFF cache found. Using mock prospects from NFL connector as fallback.")
+                            from data_pipeline.sources.nfl_draft_connector import NFLDraftConnector
+                            nfl_connector = NFLDraftConnector()
+                            prospects = nfl_connector.fetch_prospects()
                     
-                    logger.info(f"Fetched {len(prospects)} prospects from PFF.com (or cache)")
+                    logger.info(f"Fetched {len(prospects)} prospects from PFF.com")
 
                     
                     # Save prospects and grades to database
