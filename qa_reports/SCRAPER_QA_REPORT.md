@@ -293,3 +293,271 @@ There are 4 PFF scraper variants. Only `pff_scraper.py` (production) should rema
 4. **🟡 Yahoo Sports Scraper** — Challenging due to obfuscated CSS. May need structural/text-based parsing or an alternative approach.
 5. **🟡 NFL Draft Connector** — Needs a valid API endpoint or should be replaced with a scraper approach.
 6. **⚪ Cleanup** — Remove `pff_scraper_poc.py`, `pff_scraper_selenium.py`, and `pff_scraper_playwright.py` (PoC).
+
+---
+
+## Appendix A: Complete PFF DOM Selector Map
+
+**Source:** Captured live HTML (`page_1.html`, 1.4 MB, saved in project root as debug artifact by `pff_scraper.py` line ~285)
+
+This file contains the real PFF page HTML with 25 prospect cards. It can be used as a test fixture.
+
+### Card Container
+
+```
+div.g-card.g-card--border-gray
+```
+
+### Header Section (`div.m-ranking-header`)
+
+| Field | Selector | Example Value |
+|-------|----------|---------------|
+| Rank | `div.m-ranking-header__rank-container` → `div.m-rank__value` | `1` |
+| Name | `div.m-ranking-header__main-details` → `h3.m-ranking-header__title` → `a` | `Fernando Mendoza` |
+| Position | `div.m-ranking-header__details` → `div.m-stat:nth-child(1)` → `div.g-data` | `QB` |
+| Class | `div.m-ranking-header__details` → `div.m-stat:nth-child(2)` → `div.g-data` | `RS Jr.` |
+
+### Body Section (`div.g-card__content`)
+
+Layout: `div.g-grid` with two columns:
+
+**Left Column** (`div.g-span-12.g-span-6-lg.g-span-8-xl` → `div.m-content-section` → `div.m-stat-cluster`)
+
+Each stat is a `div` child of the cluster containing:
+```html
+<div class="g-label g-mb-1">School</div>
+<div class="g-data">
+  <svg class="g-icon g-icon--team">...</svg>
+  <span>Indiana</span>
+</div>
+```
+
+| Field | Pattern | Example |
+|-------|---------|---------|
+| School | `div.g-label` text = "School" → sibling `div.g-data` → `span` | `Indiana` |
+| Age | `div.g-label` text = "Age" → sibling `div.g-data` | `—` (may be missing) |
+| Height | `div.g-label` text = "Height" → sibling `div.g-data` | `6' 5"` |
+| Weight | `div.g-label` text = "Weight" → sibling `div.g-data` | `225` |
+| Speed | `div.g-label` text = "Speed" → sibling `div.g-data` | `—` (may be missing) |
+
+**Extraction strategy:** Iterate `div.m-stat-cluster > div` children. Each child contains a `div.g-label` and `div.g-data`. Use the label text to identify the field.
+
+**Right Column** (`div.g-span-12.g-span-6-lg.g-span-4-xl` → `table.g-table`)
+
+Grade table with 3 columns:
+
+| Column | Header `<th>` | Cell selector | Example |
+|--------|--------------|---------------|---------|
+| Season | `Season` | `td[data-cell-label="Season"]` | `2025` |
+| Snaps | `Snaps` | `td[data-cell-label="Snaps"]` (class `u-text-right`) | `976` |
+| Grade | `Season Grade` | `td[data-cell-label="Season Grade"]` → `div.kyber-grade-badge` → `div.kyber-grade-badge__info-text` | `91.6` |
+
+**Grade badge structure:**
+```html
+<td data-cell-label="Season Grade">
+  <div class="d-flex flex-row align-items-center justify-content-start">
+    <div class="kyber-grade-badge">
+      <div class="kyber-grade-badge__info">
+        <div class="kyber-grade-badge__info-badge" style="background: rgb(2, 127, 164);"></div>
+        <div class="kyber-grade-badge__info-bg" style="background: rgb(2, 127, 164);"></div>
+        <div class="kyber-grade-badge__info-text">91.6</div>  <!-- ← GRADE VALUE -->
+      </div>
+    </div>
+    <span class="g-ml-2 g-py-1 g-pill"><span>9<sup>th</sup> / 315</span> QB</span>
+  </span>
+</td>
+```
+
+**⚠️ Paywalled rows:** Only the most recent season row has visible snaps/grade. Older seasons show a lock icon (`button.pff-plus-badge` → `svg.kyber-svg-lock-solid`). The scraper should only extract the first `<tbody> <tr>` data.
+
+### Verified Prospect Data (first 3 from `page_1.html`)
+
+| Rank | Name | Position | Class | School | Height | Weight | Snaps | Grade |
+|------|------|----------|-------|--------|--------|--------|-------|-------|
+| 1 | Fernando Mendoza | QB | RS Jr. | Indiana | 6' 5" | 225 | 976 | 91.6 |
+| 2 | Rueben Bain Jr. | EDGE | — | — | — | — | — | — |
+| 3 | Arvell Reese | LB | — | — | — | — | — | — |
+
+---
+
+## Appendix B: Complete ESPN Injury DOM Selector Map
+
+**Source:** Live request to `https://www.espn.com/nfl/injuries` (no trailing slash), verified June 2025
+
+### Page Structure
+
+```
+div.ResponsiveTable (×32, one per team)
+├── div.Table__Title
+│   └── div.flex.flex-row → text = team name (e.g., "Arizona Cardinals")
+└── div.flex
+    └── div.Table__ScrollerWrapper
+        └── table.Table
+            ├── thead
+            │   └── tr → th.Table__TH (×5: NAME, POS, EST. RETURN DATE, STATUS, COMMENT)
+            └── tbody
+                └── tr.Table__TR.Table__TR--sm (×N per team)
+                    ├── td.col-name.Table__TD → a[href] (player name + link)
+                    ├── td.col-pos.Table__TD (position text)
+                    ├── td.col-date.Table__TD (return date text)
+                    ├── td.col-stat.Table__TD → span.TextStatus (status text)
+                    └── td.col-desc.Table__TD (comment text)
+```
+
+### Team Name Extraction
+
+The team name is **NOT** in each row — it's in a header **above** each team's table:
+
+```python
+wrapper = soup.find_all('div', class_='ResponsiveTable')  # 32 wrappers
+for w in wrapper:
+    team_name = w.find(class_='Table__Title').get_text(strip=True)
+    rows = w.find_all('tr', class_='Table__TR')
+    for row in rows:
+        # Each row inherits team_name from its wrapper
+```
+
+### Status Classes (for color-coded status)
+
+| Status | CSS Class | Example |
+|--------|-----------|---------|
+| Questionable | `TextStatus--yellow` | `<span class="TextStatus TextStatus--yellow">Questionable</span>` |
+| Out | `TextStatus--red` | `<span class="TextStatus TextStatus--red">Out</span>` |
+| Injured Reserve | `TextStatus--red` | `<span class="TextStatus TextStatus--red">Injured Reserve</span>` |
+
+### Verified Data (first team)
+
+**Arizona Cardinals** (25 rows):
+
+| Name | POS | EST. RETURN DATE | STATUS |
+|------|-----|------------------|--------|
+| Jonah Williams | OT | Mar 1 | Questionable |
+| Mack Wilson | — | — | — |
+
+Total across all 32 teams: **569 injury rows** available.
+
+---
+
+## Appendix C: Complete Yahoo Sports DOM Selector Map
+
+**Source:** Live request to `https://sports.yahoo.com/nfl/draft/`, verified June 2025
+
+### Key Challenge: Obfuscated CSS Classes
+
+Yahoo uses Tailwind-generated CSS class names (e.g., `_ys_1ejgpwy`, `_ys_u7h8d9`). These are **NOT stable** — they may change on any Yahoo deployment. A robust scraper must use **structural/text-based parsing**, not CSS class selectors.
+
+### Page Structure
+
+```
+ul._ys_6oxte4 (prospect list — 257 items)
+└── li (one per prospect)
+    └── section._ys_1vv413w (prospect card)
+        ├── div._ys_1ceho82 (header: pick + player info)
+        │   └── div._ys_g5dbmv
+        │       ├── div._ys_18jhnv0 (pick info)
+        │       │   ├── span._ys_1pbxhfo._ys_1dnwiv5 → "RD1, PK2" (short form)
+        │       │   ├── span._ys_1pbxhfo._ys_52mm7a → "Round 1, Pick 2" (long form)
+        │       │   └── span._ys_zbzk5p → "(from Browns)" (trade note, optional)
+        │       ├── img._ys_1bamtqw (player headshot)
+        │       └── div._ys_u7h8d9 (name + position + school)
+        │           ├── div._ys_1ejgpwy → "Travis Hunter" (player name)
+        │           └── ul._ys_jprp27
+        │               ├── li._ys_jkbrcc → "CB" (position)
+        │               └── li._ys_jkbrcc → "Colorado" (school)
+        └── div._ys_18pih1k (expandable detail section)
+            └── div._ys_1vv4mez
+                └── div (measurables + analysis)
+                    ├── span._ys_1j0j0k → "6' 1"" (value)
+                    ├── span._ys_blfih4 → "Height" (label)
+                    ├── span._ys_1j0j0k → "185" (value)
+                    ├── span._ys_blfih4 → "Weight" (label)
+                    ├── span → "JR" (class value, no consistent class)
+                    ├── span._ys_blfih4 → "Class" (label)
+                    ├── span._ys_1j0j0k → "21" (value)
+                    ├── span._ys_blfih4 → "Age" (label)
+                    ├── h4._ys_uns4xu → "Draft Grade: B+" (Yahoo's grade)
+                    ├── span._ys_uns4xu → "The Jaguars have made the first bold..." (analysis text)
+                    ├── h4._ys_uns4xu → "Player Comparisons"
+                    ├── h4._ys_uns4xu → "Attributes"
+                    └── div (×N) → "💨 Speed Demon", "🔧 Jack of all trades", etc.
+```
+
+### Recommended Extraction Strategy (CSS-class-independent)
+
+Since Yahoo's classes are obfuscated and unstable, the scraper should use **structural navigation**:
+
+```python
+# 1. Find the prospect list  
+prospect_list = soup.find('ul', recursive=True)  # Find the <ul> containing <li> with <section> children
+
+# 2. For each prospect
+for li in prospect_list.find_all('li', recursive=False):
+    section = li.find('section')
+    if not section:
+        continue
+    
+    # 3. Extract from stripped_strings pattern
+    texts = list(section.stripped_strings)
+    # texts pattern: ["RD1, PK2", "Round 1, Pick 2", "(from Browns)", "Travis Hunter", "CB", "Colorado", ...]
+    
+    # 4. Or use structural position:
+    #    - Player name: section's first div._ys_1ejgpwy (deepest div in header containing just name text)
+    #    - Position + School: the <ul> inside the name's parent div → <li> children (1st = position, 2nd = school)
+    #    - Measurables: find all <span> pairs in detail section where label span has known text
+```
+
+### Verified Data (first 3 from live page)
+
+| Pick | Name | Position | School | Height | Weight | Class | Age | Draft Grade |
+|------|------|----------|--------|--------|--------|-------|-----|-------------|
+| RD1, PK1 | Cam Ward | QB | Miami (FL) | 6' 2" | 223 | SR | 22 | — |
+| RD1, PK2 | Travis Hunter | CB | Colorado | 6' 1" | 185 | JR | 21 | B+ |
+| RD1, PK3 | Abdul Carter | EDGE | — | — | — | — | — | — |
+
+Total prospects in list: **257**
+
+---
+
+## Appendix D: Unit Test Dependencies
+
+**File:** `tests/unit/test_pff_scraper.py` (376 lines)
+
+### Tests That Will Break When Selectors Are Fixed
+
+The unit tests hardcode the **wrong** CSS selectors. When the production scraper is updated to use `div.g-card` instead of `div.card-prospects-box`, these tests must be updated simultaneously:
+
+| Test | Line | Issue |
+|------|------|-------|
+| `test_parse_prospect_valid` | ~202 | Uses `<div class="card-prospects-box">` with `<h3>`, `<span class="school">`, etc. |
+| `test_parse_prospect_missing_name` | ~222 | Same wrong structure |
+| `test_parse_prospect_with_missing_fields` | ~237 | Same wrong structure |
+| `test_parse_fixture_page1` | ~252 | Searches for `div.card-prospects-box` + expects fixture data with name "Patrick Surtain III" |
+| `test_scraper_workflow` (integration) | ~345 | Same wrong selectors |
+
+### Fixture Files Expected But Missing
+
+The tests reference fixture files that don't exist:
+- `tests/fixtures/pff/page_1.html` — **does not exist**
+- `tests/fixtures/pff/page_2.html` — **does not exist**
+
+**Recommendation:** Copy `page_1.html` (the debug artifact in project root, 1.4 MB of real PFF HTML) to `tests/fixtures/pff/page_1.html` and use it as the fixture. Update `test_parse_fixture_page1` to search for `div.g-card` and expect real prospect names (Fernando Mendoza, Rueben Bain Jr., etc.) instead of "Patrick Surtain III".
+
+### Validator Tests (OK — No Changes Needed)
+
+These tests are independent of CSS selectors and will continue to work:
+- `TestGradeValidator` — validates grade value ranges
+- `TestPositionValidator` — validates position codes
+- `TestProspectValidator` — validates prospect dictionaries
+- `TestProspectBatchValidator` — validates batch filtering
+- `TestPFFProspectValidator` — validates embedded validator
+
+---
+
+## Appendix E: Debug Artifacts to Clean Up
+
+| File | Size | Origin | Action |
+|------|------|--------|--------|
+| `page_1.html` (project root) | 1.4 MB | `pff_scraper.py` line ~285 debug dump | Move to `tests/fixtures/pff/page_1.html`, remove debug dump code |
+| `data/cache/pff/season_2026_page_1.json` | ~100 B | Cached empty results | Delete (contains `"prospects": [], "count": 0`) |
+| `debug_output.txt` (project root) | — | Debug artifact | Delete |
+| `debug_yahoo.py` (project root) | — | Debug script | Delete or move to `examples/` |

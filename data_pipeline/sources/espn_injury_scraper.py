@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class ESPNInjuryConnector:
     """Fetches injury data from ESPN."""
 
-    # ESPN injury reports URL
-    BASE_URL = "https://www.espn.com/nfl/injuries/"
+    # ESPN injury reports URL (no trailing slash - with trailing slash returns 404)
+    BASE_URL = "https://www.espn.com/nfl/injuries"
     RATE_LIMIT_DELAY = 3.0  # Seconds between requests (more conservative)
 
     # Injury severity levels

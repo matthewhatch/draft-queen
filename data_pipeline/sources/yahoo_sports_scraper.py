@@ -274,9 +274,9 @@ class YahooSportsConnector:
                     player_elements = found
                     break
             
-            # If still no elements, log HTML structure for debugging
+            # If still no elements, log structure and return empty
             if not player_elements:
-                logger.warning("No player elements found. Logging page structure for debugging...")
+                logger.warning("No player elements found.")
                 # Find any divs that might contain player info
                 all_divs = soup.find_all("div", limit=20)
                 logger.debug(f"Sample divs: {[d.get('class', []) for d in all_divs[:5]]}")
@@ -285,26 +285,9 @@ class YahooSportsConnector:
                 text_content = soup.get_text()
                 logger.debug(f"Page text preview: {text_content[:500]}")
                 
-                # Return mock data for testing if scraper isn't working
-                logger.info("Returning mock prospect data for testing...")
-                return [
-                    {
-                        "name": "Test Prospect 1",
-                        "position": "QB",
-                        "college": "Test College",
-                        "height": 6.2,
-                        "weight": 220,
-                        "draft_grade": 8.0,
-                    },
-                    {
-                        "name": "Test Prospect 2",
-                        "position": "RB",
-                        "college": "Test College",
-                        "height": 5.9,
-                        "weight": 210,
-                        "draft_grade": 7.5,
-                    }
-                ]
+                # Do not return mock data - let caller handle empty result
+                logger.warning("Returning 0 prospects (no mock fallback)")
+                return []
 
             logger.info(f"Found {len(player_elements)} player elements")
 

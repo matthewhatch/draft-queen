@@ -175,8 +175,8 @@ class TestPFFScraper:
 
     @pytest.fixture
     def fixture_html_page1(self):
-        """Load page 1 fixture"""
-        fixture_path = Path(__file__).parent.parent / "fixtures" / "pff" / "page_1.html"
+        """Load page 1 fixture with correct PFF DOM structure"""
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "pff" / "page_1_correct_structure.html"
         if fixture_path.exists():
             with open(fixture_path, "r") as f:
                 return f.read()
@@ -198,35 +198,78 @@ class TestPFFScraper:
         assert scraper.prospects == []
 
     def test_parse_prospect_valid(self, scraper):
-        """Test parsing valid prospect"""
+        """Test parsing valid prospect with correct PFF DOM structure"""
         html = """
-        <div class="card-prospects-box">
-            <h3>Patrick Surtain III</h3>
-            <span class="position">CB</span>
-            <span class="school">Miami (FL)</span>
-            <span class="grade">9.8</span>
+        <div class="g-card g-card--border-gray">
+            <div class="m-ranking-header">
+                <div class="m-ranking-header__main-details">
+                    <h3 class="m-ranking-header__title">
+                        <a href="#">Fernando Mendoza</a>
+                    </h3>
+                </div>
+                <div class="m-ranking-header__details">
+                    <div class="m-stat">
+                        <div class="g-label">Position</div>
+                        <div class="g-data">QB</div>
+                    </div>
+                    <div class="m-stat">
+                        <div class="g-label">Class</div>
+                        <div class="g-data">RS Jr.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="g-card__content">
+                <div class="m-stat-cluster">
+                    <div>
+                        <div class="g-label">School</div>
+                        <div class="g-data"><span>Indiana</span></div>
+                    </div>
+                    <div>
+                        <div class="g-label">Height</div>
+                        <div class="g-data">6' 5"</div>
+                    </div>
+                </div>
+                <table class="g-table">
+                    <tbody>
+                        <tr>
+                            <td data-cell-label="Season Grade">
+                                <div class="kyber-grade-badge__info-text">91.6</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
         """
         soup = BeautifulSoup(html, "html.parser")
-        div = soup.find("div", class_="card-prospects-box")
+        div = soup.find("div", class_="g-card")
 
         prospect = scraper.parse_prospect(div)
 
         assert prospect is not None
-        assert prospect["name"] == "Patrick Surtain III"
-        assert prospect["position"] == "CB"
-        assert prospect["grade"] == "9.8"
+        assert prospect["name"] == "Fernando Mendoza"
+        assert prospect["position"] == "QB"
+        assert prospect["school"] == "Indiana"
+        assert prospect["class"] == "RS Jr."
+        assert prospect["grade"] == "91.6"
 
     def test_parse_prospect_missing_name(self, scraper):
         """Test parsing prospect without name"""
         html = """
-        <div class="card-prospects-box">
-            <span class="position">CB</span>
-            <span class="grade">9.8</span>
+        <div class="g-card g-card--border-gray">
+            <div class="m-ranking-header">
+                <!-- No title/name element -->
+                <div class="m-ranking-header__details">
+                    <div class="m-stat">
+                        <div class="g-label">Position</div>
+                        <div class="g-data">CB</div>
+                    </div>
+                </div>
+            </div>
         </div>
         """
         soup = BeautifulSoup(html, "html.parser")
-        div = soup.find("div", class_="card-prospects-box")
+        div = soup.find("div", class_="g-card")
 
         prospect = scraper.parse_prospect(div)
 
@@ -235,13 +278,30 @@ class TestPFFScraper:
     def test_parse_prospect_with_missing_fields(self, scraper):
         """Test parsing prospect with missing optional fields"""
         html = """
-        <div class="card-prospects-box">
-            <h3>Test Prospect</h3>
-            <span class="position">CB</span>
+        <div class="g-card g-card--border-gray">
+            <div class="m-ranking-header">
+                <div class="m-ranking-header__main-details">
+                    <h3 class="m-ranking-header__title">
+                        <a href="#">Test Prospect</a>
+                    </h3>
+                </div>
+                <div class="m-ranking-header__details">
+                    <div class="m-stat">
+                        <div class="g-label">Position</div>
+                        <div class="g-data">CB</div>
+                    </div>
+                </div>
+            </div>
+            <div class="g-card__content">
+                <div class="m-stat-cluster">
+                    <!-- No school, height, weight -->
+                </div>
+                <table class="g-table"><tbody><tr></tr></tbody></table>
+            </div>
         </div>
         """
         soup = BeautifulSoup(html, "html.parser")
-        div = soup.find("div", class_="card-prospects-box")
+        div = soup.find("div", class_="g-card")
 
         prospect = scraper.parse_prospect(div)
 
@@ -251,20 +311,34 @@ class TestPFFScraper:
         assert prospect["school"] is None
 
     def test_parse_fixture_page1(self, scraper, fixture_html_page1):
-        """Test parsing fixture page 1"""
+        """Test parsing fixture page 1 with real prospect data"""
         if not fixture_html_page1:
             pytest.skip("Fixture file not found")
 
         soup = BeautifulSoup(fixture_html_page1, "html.parser")
         prospects = []
 
-        for div in soup.find_all("div", class_="card-prospects-box"):
+        prospect_divs = soup.find_all("div", class_="g-card")
+        for div in prospect_divs:
             prospect = scraper.parse_prospect(div)
             if prospect:
                 prospects.append(prospect)
 
-        assert len(prospects) >= 5
-        assert any(p["name"] == "Patrick Surtain III" for p in prospects)
+        # Should find 3 prospects from fixture
+        assert len(prospects) == 3
+        # Check first prospect
+        assert prospects[0]["name"] == "Fernando Mendoza"
+        assert prospects[0]["position"] == "QB"
+        assert prospects[0]["school"] == "Indiana"
+        assert prospects[0]["grade"] == "91.6"
+        # Check second prospect (partial data)
+        assert prospects[1]["name"] == "Rueben Bain Jr"
+        assert prospects[1]["position"] == "EDGE"
+        # Check third prospect
+        assert prospects[2]["name"] == "Arvell Reese"
+        assert prospects[2]["position"] == "LB"
+
+        # All 3 prospects from fixture have been tested above
 
     def test_cache_operations(self):
         """Test cache save/load"""
@@ -343,24 +417,48 @@ class TestPFFScraperIntegration:
         """Test complete scraper workflow"""
         scraper = PFFScraper(season=2026, cache_enabled=False)
 
-        # Create fixture-like HTML
+        # Create fixture-like HTML with correct structure
         html = """
-        <div class="card-prospects-box">
-            <h3>Test 1</h3>
-            <span class="position">CB</span>
-            <span class="grade">9.5</span>
+        <div class="g-card g-card--border-gray">
+            <div class="m-ranking-header">
+                <div class="m-ranking-header__main-details">
+                    <h3 class="m-ranking-header__title"><a>Test 1</a></h3>
+                </div>
+                <div class="m-ranking-header__details">
+                    <div class="m-stat">
+                        <div class="g-label">Position</div>
+                        <div class="g-data">CB</div>
+                    </div>
+                </div>
+            </div>
+            <div class="g-card__content">
+                <div class="m-stat-cluster"></div>
+                <table class="g-table"><tbody><tr></tr></tbody></table>
+            </div>
         </div>
-        <div class="card-prospects-box">
-            <h3>Test 2</h3>
-            <span class="position">INVALID</span>
-            <span class="grade">9.3</span>
+        <div class="g-card g-card--border-gray">
+            <div class="m-ranking-header">
+                <div class="m-ranking-header__main-details">
+                    <h3 class="m-ranking-header__title"><a>Test 2</a></h3>
+                </div>
+                <div class="m-ranking-header__details">
+                    <div class="m-stat">
+                        <div class="g-label">Position</div>
+                        <div class="g-data">INVALID</div>
+                    </div>
+                </div>
+            </div>
+            <div class="g-card__content">
+                <div class="m-stat-cluster"></div>
+                <table class="g-table"><tbody><tr></tr></tbody></table>
+            </div>
         </div>
         """
 
         soup = BeautifulSoup(html, "html.parser")
         prospects = []
 
-        for div in soup.find_all("div", class_="card-prospects-box"):
+        for div in soup.find_all("div", class_="g-card"):
             prospect = scraper.parse_prospect(div)
             if prospect:
                 prospects.append(prospect)

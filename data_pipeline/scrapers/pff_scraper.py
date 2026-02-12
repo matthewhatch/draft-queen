@@ -162,34 +162,107 @@ class PFFScraper:
 
     def parse_prospect(self, prospect_div) -> Optional[Dict]:
         """
-        Parse prospect from HTML div
+        Parse prospect from HTML div using actual PFF DOM structure
         
-        Extracts: name, position, school, class, grade
+        Expected structure:
+          div.g-card.g-card--border-gray
+            div.m-ranking-header
+              div.m-ranking-header__main-details
+                h3.m-ranking-header__title → a (player name)
+              div.m-ranking-header__details
+                div.m-stat:nth-child(1) → div.g-data (position)
+                div.m-stat:nth-child(2) → div.g-data (class)
+            div.g-card__content
+              div.m-stat-cluster
+                div (×N)
+                  div.g-label (field name)
+                  div.g-data (field value)
+              table.g-table
+                tbody → tr:first
+                  td[data-cell-label="Season Grade"] → div.kyber-grade-badge__info-text
         """
         try:
-            # Extract name from h3 or h4 tag
-            name_elem = prospect_div.find(["h3", "h4"])
-            
-            if not name_elem:
-                logger.debug("Name element not found in prospect div")
+            # Extract name from header
+            header = prospect_div.find("div", class_="m-ranking-header")
+            if not header:
+                logger.debug("Ranking header not found in prospect div")
                 return None
 
-            name = name_elem.get_text(strip=True)
+            # Name is in h3.m-ranking-header__title → a tag
+            title_elem = header.find("h3", class_="m-ranking-header__title")
+            if not title_elem:
+                logger.debug("Title element not found in header")
+                return None
+                
+            name_link = title_elem.find("a")
+            name = name_link.get_text(strip=True) if name_link else None
             if not name:
+                logger.debug("No name text found")
                 return None
 
-            # Extract other fields
-            school_elem = prospect_div.find("span", class_="school")
-            class_elem = prospect_div.find("span", class_="class")
-            pos_elem = prospect_div.find("span", class_="position")
-            grade_elem = prospect_div.find("span", class_="grade")
+            # Extract position and class from header details
+            details = header.find("div", class_="m-ranking-header__details")
+            position = None
+            class_str = None
+            
+            if details:
+                stats = details.find_all("div", class_="m-stat")
+                if len(stats) >= 1:
+                    pos_data = stats[0].find("div", class_="g-data")
+                    position = pos_data.get_text(strip=True) if pos_data else None
+                if len(stats) >= 2:
+                    class_data = stats[1].find("div", class_="g-data")
+                    class_str = class_data.get_text(strip=True) if class_data else None
+
+            # Extract school, height, weight from stat cluster
+            school = None
+            height = None
+            weight = None
+            
+            stat_cluster = prospect_div.find("div", class_="m-stat-cluster")
+            if stat_cluster:
+                # Iterate through stat divs
+                stat_divs = stat_cluster.find_all("div", recursive=False)
+                for stat_div in stat_divs:
+                    label_elem = stat_div.find("div", class_="g-label")
+                    data_elem = stat_div.find("div", class_="g-data")
+                    if not (label_elem and data_elem):
+                        continue
+                    
+                    label_text = label_elem.get_text(strip=True).lower()
+                    value_text = data_elem.get_text(strip=True)
+                    
+                    if label_text == "school":
+                        # Extract span text from g-data (removes SVG icon)
+                        span = data_elem.find("span")
+                        school = span.get_text(strip=True) if span else value_text
+                    elif label_text == "height":
+                        height = value_text if value_text != "—" else None
+                    elif label_text == "weight":
+                        weight = value_text if value_text != "—" else None
+
+            # Extract grade from table
+            grade = None
+            table = prospect_div.find("table", class_="g-table")
+            if table:
+                tbody = table.find("tbody")
+                if tbody:
+                    first_row = tbody.find("tr")
+                    if first_row:
+                        # Grade is in td[data-cell-label="Season Grade"]
+                        grade_cell = first_row.find("td", attrs={"data-cell-label": "Season Grade"})
+                        if grade_cell:
+                            grade_badge = grade_cell.find("div", class_="kyber-grade-badge__info-text")
+                            grade = grade_badge.get_text(strip=True) if grade_badge else None
 
             prospect = {
                 "name": name,
-                "position": pos_elem.get_text(strip=True) if pos_elem else None,
-                "school": school_elem.get_text(strip=True) if school_elem else None,
-                "class": class_elem.get_text(strip=True) if class_elem else None,
-                "grade": grade_elem.get_text(strip=True) if grade_elem else None,
+                "position": position,
+                "school": school,
+                "class": class_str,
+                "height": height,
+                "weight": weight,
+                "grade": grade,
                 "scraped_at": datetime.utcnow().isoformat(),
             }
 
@@ -244,8 +317,8 @@ class PFFScraper:
                     
                     # Wait for prospect cards to be rendered
                     try:
-                        logger.info(f"Waiting for selector: div.card-prospects-box (timeout: 5000ms)")
-                        await page.wait_for_selector("div.card-prospects-box", timeout=5000)
+                        logger.info(f"Waiting for selector: div.g-card (timeout: 5000ms)")
+                        await page.wait_for_selector("div.g-card", timeout=5000)
                         logger.info(f"Prospect cards rendered on page {page_num}")
                     except Exception as e:
                         logger.warning(f"Prospect selector not found after wait: {e}")
@@ -256,34 +329,21 @@ class PFFScraper:
                     html = await page.content()
                     logger.info(f"Page {page_num} HTML retrieved: {len(html)} bytes")
                     
-                    # Log first 500 chars and look for key indicators
-                    logger.debug(f"HTML snippet (first 500 chars):\n{html[:500]}")
-                    
-                    # Check if we got meaningful content
+                    # Verify we have meaningful content
                     if len(html) < 1000:
                         logger.warning(f"Page {page_num} HTML is very small ({len(html)} bytes) - may not be fully loaded")
-                    
-                    if "card-prospects-box" in html:
-                        logger.info(f"✓ Found prospect selector in HTML")
-                    else:
-                        logger.warning(f"✗ Prospect selector NOT found in HTML")
-                    
-                    # save html to html file for debugging
-                    with open(f"page_{page_num}.html", "w") as f:
-                        f.write(html)
-                    logger.info(f"HTML saved to page_{page_num}.html for manual inspection")
                         
                     # Parse prospects
                     soup = BeautifulSoup(html, "html.parser")
                     prospects = []
 
-                    # Get prospect cards
-                    prospect_divs = soup.find_all("div", class_="card-prospects-box")
+                    # Get prospect cards - using correct selector div.g-card
+                    prospect_divs = soup.find_all("div", class_="g-card")
                     logger.info(f"Found {len(prospect_divs)} prospect divs in parsed HTML")
                     
                     if not prospect_divs:
-                        logger.error(f"No prospects found on page {page_num}. Check HTML file for debugging.")
-                        logger.error(f"Expected selector: div.card-prospects-box")
+                        logger.error(f"No prospects found on page {page_num}.")
+                        logger.error(f"Expected selector: div.g-card")
 
                     for div in prospect_divs:
                         prospect = self.parse_prospect(div)
@@ -292,8 +352,11 @@ class PFFScraper:
 
                     logger.info(f"Extracted {len(prospects)} prospects from page {page_num}")
 
-                    # Cache results
-                    self._save_cache(page_num, prospects)
+                    # Only cache if we found prospects (never cache empty results)
+                    if prospects:
+                        self._save_cache(page_num, prospects)
+                    else:
+                        logger.warning(f"Page {page_num} returned 0 prospects - not caching empty result")
 
                     await page.close()
 
