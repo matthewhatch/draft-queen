@@ -653,12 +653,35 @@ async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description
                             ).first()
                             
                             if not existing:
+                                # Parse height (convert from string format like "6' 4"" to decimal)
+                                height_str = prospect_data.get("height", "")
+                                height = None
+                                if height_str:
+                                    try:
+                                        # Parse "6' 4"" format
+                                        parts = height_str.replace('"', "").split("'")
+                                        if len(parts) == 2:
+                                            feet = int(parts[0])
+                                            inches = int(parts[1].strip()) if parts[1].strip() else 0
+                                            height = feet + (inches / 12.0)
+                                    except (ValueError, IndexError):
+                                        height = None
+                                
+                                # Parse weight (remove non-numeric characters)
+                                weight_str = prospect_data.get("weight", "")
+                                weight = None
+                                if weight_str:
+                                    try:
+                                        weight = int(''.join(filter(str.isdigit, weight_str)))
+                                    except ValueError:
+                                        weight = None
+                                
                                 prospect = Prospect(
                                     name=prospect_data.get("name", ""),
                                     position=prospect_data.get("position", ""),
                                     college=prospect_data.get("school", ""),
-                                    height=prospect_data.get("height"),
-                                    weight=prospect_data.get("weight"),
+                                    height=height,
+                                    weight=weight,
                                     status="active",
                                     data_source="pff"
                                 )
