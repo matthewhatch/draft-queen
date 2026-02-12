@@ -210,9 +210,13 @@ class PFFScraper:
                 if len(stats) >= 1:
                     pos_data = stats[0].find("div", class_="g-data")
                     position = pos_data.get_text(strip=True) if pos_data else None
+                    if position == "—":  # Normalize em-dash to None
+                        position = None
                 if len(stats) >= 2:
                     class_data = stats[1].find("div", class_="g-data")
                     class_str = class_data.get_text(strip=True) if class_data else None
+                    if class_str == "—":  # Normalize em-dash to None
+                        class_str = None
 
             # Extract school, height, weight from stat cluster
             school = None
@@ -236,6 +240,8 @@ class PFFScraper:
                         # Extract span text from g-data (removes SVG icon)
                         span = data_elem.find("span")
                         school = span.get_text(strip=True) if span else value_text
+                        if school == "—":  # Normalize em-dash to None
+                            school = None
                     elif label_text == "height":
                         height = value_text if value_text != "—" else None
                     elif label_text == "weight":

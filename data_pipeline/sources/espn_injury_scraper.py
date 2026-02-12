@@ -194,77 +194,100 @@ class ESPNInjuryConnector:
             logger.warning(f"Error parsing return date '{return_str}': {e}")
             return None
 
-    def _parse_injury_row(self, row_html: str) -> Optional[Dict[str, Any]]:
+    def _parse_injury_row(self, row, team_name: str) -> Optional[Dict[str, Any]]:
         """
-        Parse individual injury row from HTML.
+        Parse individual injury row from HTML using CORRECT ESPN selectors.
+        
+        Correct selectors (from ESPN page structure):
+        - Player name: td.col-name > a
+        - Position: td.col-pos
+        - Return date: td.col-date
+        - Status: td.col-stat > span.TextStatus
+        - Comment: td.col-desc
+        - Team: passed as parameter (from table header, not row)
 
         Args:
-            row_html: HTML snippet containing injury info
+            row: BeautifulSoup tr element (tr.Table__TR)
+            team_name: Team name extracted from table header
 
         Returns:
             Dictionary with injury data or None if parsing fails
         """
         try:
-            soup = BeautifulSoup(row_html, "html.parser")
-
-            # Extract player name
-            name_elem = soup.find("td", class_="player-name")
-            if not name_elem:
+            # Extract player name from td.col-name > a
+            name_cell = row.find("td", class_="col-name")
+            if not name_cell:
                 return None
 
-            player_name = name_elem.text.strip()
+            name_link = name_cell.find("a")
+            player_name = name_link.text.strip() if name_link else name_cell.text.strip()
+            if not player_name:
+                return None
 
-            # Extract position
-            pos_elem = soup.find("td", class_="player-position")
-            position = pos_elem.text.strip() if pos_elem else None
+            # Extract position from td.col-pos
+            pos_cell = row.find("td", class_="col-pos")
+            position = pos_cell.text.strip() if pos_cell else None
+            if position == "—":  # Em-dash = missing data
+                position = None
 
-            # Extract team
-            team_elem = soup.find("td", class_="player-team")
-            team = team_elem.text.strip() if team_elem else None
+            # Extract return date from td.col-date
+            date_cell = row.find("td", class_="col-date")
+            return_date_str = date_cell.text.strip() if date_cell else None
+            if return_date_str == "—":
+                return_date_str = None
+            return_date = self._parse_return_date(return_date_str) if return_date_str else None
 
-            # Extract injury type
-            injury_elem = soup.find("td", class_="injury-type")
-            injury_type = (
-                self._normalize_injury_type(injury_elem.text)
-                if injury_elem
-                else "Unknown"
-            )
+            # Extract status from td.col-stat > span.TextStatus
+            status_label = "Unknown"
+            severity_score = 0
+            status_cell = row.find("td", class_="col-stat")
+            if status_cell:
+                status_span = status_cell.find("span", class_="TextStatus")
+                if status_span:
+                    status_label = status_span.text.strip()
+                    # Check status color class for severity
+                    span_classes = status_span.get("class", [])
+                    if "TextStatus--red" in span_classes:
+                        severity_score = 3  # Out/IR = most severe
+                    elif "TextStatus--yellow" in span_classes:
+                        severity_score = 1  # Questionable
+                    else:
+                        severity_score = 2  # Probable/default
 
-            # Extract status
-            status_elem = soup.find("td", class_="injury-status")
-            if status_elem:
-                status_str = status_elem.text.strip()
-                severity_label, severity_score = self._extract_severity(status_str)
-            else:
-                severity_label, severity_score = "Unknown", 0
-
-            # Extract expected return date
-            return_elem = soup.find("td", class_="return-date")
-            return_date = (
-                self._parse_return_date(return_elem.text) if return_elem else None
-            )
+            # Extract comment from td.col-desc
+            comment = None
+            comment_cell = row.find("td", class_="col-desc")
+            if comment_cell:
+                comment_text = comment_cell.text.strip()
+                if comment_text and comment_text != "—":
+                    comment = comment_text
 
             injury_data = {
                 "player_name": player_name,
                 "position": position,
-                "team": team,
-                "injury_type": injury_type,
-                "severity_label": severity_label,
+                "team": team_name,
+                "status": status_label,
                 "severity_score": severity_score,
                 "expected_return_date": return_date,
+                "comment": comment,
                 "reported_date": datetime.now(),
             }
 
-            logger.debug(f"Parsed injury for {player_name}: {injury_type} ({severity_label})")
+            logger.debug(f"Parsed injury for {player_name} ({team_name}): {status_label}")
             return injury_data
 
         except Exception as e:
-            logger.error(f"Failed to parse injury row: {e}")
+            logger.debug(f"Failed to parse injury row: {e}")
             return None
 
     def fetch_injuries(self) -> List[Dict[str, Any]]:
         """
         Fetch current injury reports from ESPN.
+        
+        ESPN structure: 32 div.ResponsiveTable wrappers (one per team)
+        Each contains:
+          - div.Table__Title with team name
+          - table.Table with tr.Table__TR rows
 
         Returns:
             List of injury data dictionaries
@@ -279,23 +302,41 @@ class ESPNInjuryConnector:
                 logger.warning("Failed to fetch ESPN injuries page")
                 return self.cached_injuries.get("injuries", [])
 
-            # Parse injury table
+            # Parse injury tables
             soup = BeautifulSoup(html_content, "html.parser")
-            injury_rows = soup.find_all("tr", class_="injury-row")
+            team_tables = soup.find_all("div", class_="ResponsiveTable")
 
-            logger.info(f"Found {len(injury_rows)} injury records")
+            logger.info(f"Found {len(team_tables)} team injury tables")
 
-            for row in injury_rows:
-                injury = self._parse_injury_row(str(row))
-                if injury:
-                    injuries.append(injury)
+            for team_wrapper in team_tables:
+                # Extract team name from header
+                title_elem = team_wrapper.find("div", class_="Table__Title")
+                if not title_elem:
+                    continue
+                
+                team_name = title_elem.get_text(strip=True)
+                logger.debug(f"Processing injuries for {team_name}")
+
+                # Find table with injury rows
+                table = team_wrapper.find("table", class_="Table")
+                if not table:
+                    continue
+
+                # Parse each row (tr.Table__TR)
+                injury_rows = table.find_all("tr", class_="Table__TR")
+                logger.debug(f"Found {len(injury_rows)} injury rows for {team_name}")
+
+                for row in injury_rows:
+                    injury = self._parse_injury_row(row, team_name)
+                    if injury:
+                        injuries.append(injury)
 
             # Cache results
             self.cached_injuries["injuries"] = injuries
             self.last_update = datetime.now()
 
             logger.info(
-                f"Successfully fetched {len(injuries)} injury records from ESPN"
+                f"Successfully fetched {len(injuries)} injury records from ESPN ({len(team_tables)} teams)"
             )
             return injuries
 
