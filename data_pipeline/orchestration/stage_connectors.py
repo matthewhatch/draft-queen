@@ -391,9 +391,17 @@ class PFFGradeLoadConnector(PipelineConnector):
         """Initialize PFF grade load connector.
 
         Args:
-            pff_prospects: List of raw PFF prospect dicts from scraper
+            pff_prospects: List of raw PFF prospect dicts from scraper (optional)
         """
         self.pff_prospects = pff_prospects or []
+
+    def set_pff_prospects(self, pff_prospects: list[dict]):
+        """Set PFF prospects data (called by orchestrator after PFF scrape stage).
+        
+        Args:
+            pff_prospects: List of raw PFF prospect dicts from scraper
+        """
+        self.pff_prospects = pff_prospects
 
     async def execute(self) -> Dict[str, Any]:
         """Execute PFF grade loading stage.

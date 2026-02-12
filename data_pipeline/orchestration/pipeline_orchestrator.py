@@ -70,6 +70,7 @@ class StageExecution:
     started_at: datetime
     completed_at: Optional[datetime] = None
     duration_seconds: Optional[float] = None
+    result: Optional[Dict[str, Any]] = None
     records_processed: int = 0
     records_succeeded: int = 0
     records_failed: int = 0
@@ -318,6 +319,19 @@ class PipelineOrchestrator:
         connector = self.stages[stage]
         last_error = None
 
+        # Pass data from previous stages to this stage
+        if stage == PipelineStage.PFF_GRADE_LOAD:
+            # Find the PFF_SCRAPE stage results
+            pff_scrape_exec = next(
+                (s for s in execution.stages if s.stage == PipelineStage.PFF_SCRAPE),
+                None,
+            )
+            if pff_scrape_exec and hasattr(connector, 'set_pff_prospects'):
+                # Extract PFF prospects from scraper result
+                pff_data = pff_scrape_exec.result.get('prospects', []) if pff_scrape_exec.result else []
+                connector.set_pff_prospects(pff_data)
+                logger.debug(f"Passed {len(pff_data)} PFF prospects to grade loader")
+
         # Attempt with retries
         for attempt in range(self.max_retries + 1):
             try:
@@ -332,6 +346,7 @@ class PipelineOrchestrator:
 
                 # Process results
                 stage_exec.status = ExecutionStatus.SUCCESS
+                stage_exec.result = result
                 stage_exec.records_processed = result.get("records_processed", 0)
                 stage_exec.records_succeeded = result.get("records_succeeded", 0)
                 stage_exec.records_failed = result.get("records_failed", 0)

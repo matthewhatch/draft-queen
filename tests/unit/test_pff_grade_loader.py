@@ -91,9 +91,10 @@ class TestPFFGradeLoader:
     def test_fuzzy_match_name_variation(self):
         """Test fuzzy match for name variation with matching position/school."""
         # Use matching position and school to isolate name fuzzing
+        # NOTE: "DT" is a real PFF position that maps to "DL" in DB
         pff_data = self._make_pff_prospect(
             name="J. Carter",
-            position="DL",
+            position="DT",  # Real PFF position (maps to DB "DL")
             school="Georgia",
         )
         db_prospect = self._make_db_prospect(

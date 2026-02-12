@@ -68,7 +68,6 @@ class PFFPipelineSetup:
             connector=pff_grade_connector,
             order=45,  # After PFF_SCRAPE (order 2), before RECONCILIATION
         )
-        )
 
         logger.info("✓ PFF scraper registered in pipeline")
         logger.info("✓ PFF grade loading registered in pipeline")
