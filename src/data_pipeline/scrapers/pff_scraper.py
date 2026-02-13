@@ -285,9 +285,10 @@ class PFFScraper:
 
     async def scrape_page(self, page_num: int, retry_count: int = 0) -> List[Dict]:
         """
-        Scrape single page of prospects
+        Scrape single page of PFF Big Board prospects
         
-        Returns prospects from cache if available, otherwise fetches from PFF.com
+        PFF uses pagination buttons (arrow icons) to navigate between pages.
+        We navigate to the desired page by clicking the next button repeatedly.
         """
         # Try cache first
         cached = self._load_cache(page_num)
@@ -315,42 +316,67 @@ class PFFScraper:
 
                 try:
                     page = await context.new_page()
-                    url = f"{PFFScraperConfig.BASE_URL}?season={self.season}&page={page_num}"
+                    url = f"{PFFScraperConfig.BASE_URL}?season={self.season}"
 
-                    logger.info(f"Starting page load for {url}")
+                    logger.info(f"Loading {url}")
                     await page.goto(url, wait_until="load", timeout=PFFScraperConfig.REQUEST_TIMEOUT)
-                    logger.info(f"Page {page_num} loaded successfully")
+                    logger.info(f"Page loaded successfully")
                     
                     # Wait for prospect cards to be rendered
                     try:
                         logger.info(f"Waiting for selector: div.g-card (timeout: 5000ms)")
                         await page.wait_for_selector("div.g-card", timeout=5000)
-                        logger.info(f"Prospect cards rendered on page {page_num}")
+                        logger.info(f"Prospect cards rendered")
                     except Exception as e:
                         logger.warning(f"Prospect selector not found after wait: {e}")
                     
-                    # Additional wait for JavaScript to complete rendering
+                    # Navigate to desired page by clicking next button
+                    if page_num > 1:
+                        logger.info(f"Navigating to page {page_num}...")
+                        for current_page in range(1, page_num):
+                            # Find and click the next button
+                            # The buttons have class "g-btn kyber-button" and contain SVG icons
+                            try:
+                                # Get all pagination buttons
+                                next_buttons = await page.query_selector_all("button.g-btn")
+                                
+                                # The next button should be one of the last buttons (after first, prev buttons)
+                                # Try to find one that's not disabled
+                                clicked = False
+                                for btn in next_buttons[-3:]:  # Check last 3 buttons (next should be second to last)
+                                    is_disabled = await btn.get_attribute("disabled")
+                                    if not is_disabled:
+                                        await btn.click()
+                                        clicked = True
+                                        logger.info(f"Clicked next button (page {current_page} -> {current_page + 1})")
+                                        break
+                                
+                                if not clicked:
+                                    logger.warning(f"Could not find enabled next button")
+                                    break
+                                
+                                # Wait for page to update
+                                await asyncio.sleep(2.0)
+                                await page.wait_for_selector("div.g-card", timeout=5000)
+                                
+                            except Exception as e:
+                                logger.warning(f"Error navigating to page {current_page + 1}: {e}")
+                                break
+                    
+                    # Wait for prospects to stabilize
                     await asyncio.sleep(1.0)
 
                     html = await page.content()
                     logger.info(f"Page {page_num} HTML retrieved: {len(html)} bytes")
                     
-                    # Verify we have meaningful content
-                    if len(html) < 1000:
-                        logger.warning(f"Page {page_num} HTML is very small ({len(html)} bytes) - may not be fully loaded")
-                        
                     # Parse prospects
                     soup = BeautifulSoup(html, "html.parser")
                     prospects = []
 
-                    # Get prospect cards - using correct selector div.g-card
+                    # Get prospect cards
                     prospect_divs = soup.find_all("div", class_="g-card")
                     logger.info(f"Found {len(prospect_divs)} prospect divs in parsed HTML")
                     
-                    if not prospect_divs:
-                        logger.error(f"No prospects found on page {page_num}.")
-                        logger.error(f"Expected selector: div.g-card")
-
                     for div in prospect_divs:
                         prospect = self.parse_prospect(div)
                         if prospect:
@@ -358,7 +384,7 @@ class PFFScraper:
 
                     logger.info(f"Extracted {len(prospects)} prospects from page {page_num}")
 
-                    # Only cache if we found prospects (never cache empty results)
+                    # Only cache if we found prospects
                     if prospects:
                         self._save_cache(page_num, prospects)
                     else:
