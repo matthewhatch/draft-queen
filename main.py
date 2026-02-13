@@ -173,13 +173,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware
+# Add CORS middleware - restrict to known origins for security
+allowed_origins = [
+    "http://localhost:3000",      # Frontend dev
+    "http://localhost:8000",      # Backend dev
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
+# Add production origins if specified
+production_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+allowed_origins.extend([origin.strip() for origin in production_origins if origin.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,              # Don't allow credentials with CORS
+    allow_methods=["GET", "POST", "PUT"],  # Only necessary methods
+    allow_headers=["Content-Type", "Authorization"],  # Only necessary headers
 )
 
 # Include routers

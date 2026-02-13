@@ -1,6 +1,6 @@
 """FastAPI routes for prospect queries."""
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Body, Response, Path
+from fastapi import APIRouter, Depends, Query, HTTPException, Body, Response, Path, Header, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import logging
@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional, List
 import subprocess
 
+from config import settings
 from backend.database import db
 from backend.database.models import Prospect
 from backend.api.schemas import (
@@ -19,6 +20,48 @@ from backend.api.query_service import QueryService
 from backend.api.export_service import ExportService, ExportFormat
 from backend.api.analytics_service import AnalyticsService
 from backend.api.ranking_service import RankingService
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Authentication for Admin Endpoints
+# ============================================================================
+
+async def verify_admin_token(x_api_key: str = Header(None)) -> str:
+    """Verify admin API key from X-API-Key header."""
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing X-API-Key header",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    if x_api_key != settings.admin_api_key:
+        logger.warning(f"Invalid admin API key attempt")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid API key"
+        )
+    
+    return x_api_key
+
+
+# ============================================================================
+# Logging for Admin Actions
+# ============================================================================
+
+def log_admin_action(action: str, status_result: str, details: dict = None):
+    """Log administrative action for audit trail."""
+    log_data = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "action": action,
+        "status": status_result,
+    }
+    if details:
+        log_data.update(details)
+    logger.warning(f"ADMIN_ACTION: {log_data}")
+
 
 logger = logging.getLogger(__name__)
 
@@ -543,10 +586,10 @@ async def health_check():
 @admin_router.post(
     "/admin/db/migrate",
     summary="Run database migrations",
-    description="Apply pending database migrations"
+    description="Apply pending database migrations (requires admin API key)"
 )
-async def run_migrations():
-    """Run database migrations using alembic."""
+async def run_migrations(admin_token: str = Depends(verify_admin_token)):
+    """Run database migrations using alembic (requires authentication)."""
     try:
         result = subprocess.run(
             ["alembic", "upgrade", "head"],
@@ -556,6 +599,7 @@ async def run_migrations():
         )
         
         if result.returncode == 0:
+            log_admin_action("db_migrate", "success", {"return_code": result.returncode})
             return {
                 "status": "success",
                 "message": "Migrations completed successfully",
@@ -564,25 +608,31 @@ async def run_migrations():
             }
         else:
             logger.error(f"Migration failed: {result.stderr}")
+            log_admin_action("db_migrate", "failed", {"error": result.stderr})
             raise HTTPException(status_code=500, detail=f"Migration failed: {result.stderr}")
     
     except subprocess.TimeoutExpired:
+        log_admin_action("db_migrate", "timeout")
         raise HTTPException(status_code=408, detail="Migration timed out")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Migration execution failed: {str(e)}", exc_info=True)
+        log_admin_action("db_migrate", "error", {"error": str(e)})
         raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
 
 
 @admin_router.post(
     "/admin/db/backup",
     summary="Create database backup",
-    description="Create a backup of the database"
+    description="Create a backup of the database (requires admin API key)"
 )
-async def create_backup():
-    """Create database backup."""
+async def create_backup(admin_token: str = Depends(verify_admin_token)):
+    """Create database backup (requires authentication)."""
     try:
         from datetime import datetime
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        log_admin_action("db_backup", "success", {"backup_file": f"backup_{timestamp}.sql"})
         return {
             "status": "success",
             "message": "Backup created successfully",
@@ -591,6 +641,7 @@ async def create_backup():
         }
     except Exception as e:
         logger.error(f"Backup creation failed: {str(e)}", exc_info=True)
+        log_admin_action("db_backup", "failed", {"error": str(e)})
         raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
 
 
@@ -611,10 +662,13 @@ async def get_version():
 @admin_router.post(
     "/pipeline/run",
     summary="Trigger pipeline execution",
-    description="Immediately trigger pipeline execution with optional stage filters"
+    description="Immediately trigger pipeline execution with optional stage filters (requires admin API key)"
 )
-async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description="Stages to run")):
-    """Trigger pipeline execution."""
+async def trigger_pipeline(
+    stages: Optional[List[str]] = Query(None, description="Stages to run"),
+    admin_token: str = Depends(verify_admin_token)
+):
+    """Trigger pipeline execution (requires authentication)."""
     try:
         import threading
         from backend.database import db
@@ -624,6 +678,7 @@ async def trigger_pipeline(stages: Optional[List[str]] = Query(None, description
         import asyncio
         
         execution_id = f"exec_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        log_admin_action("pipeline_trigger", "started", {"execution_id": execution_id, "stages": stages})
         
         def run_pipeline():
             """Run pipeline in background thread."""
