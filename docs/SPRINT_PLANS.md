@@ -15,7 +15,7 @@
 | 2 | Feb 24 - Mar 9 | Advanced Querying & Reporting | ~38 |
 | 3 | Mar 10-23 | Data Ingestion from Real Sources | ~44 |
 | 4 | Mar 24 - Apr 6 | PFF Data Integration & Premium Analytics | ~35 |
-| 5 | Apr 7 - Apr 20 | Analytics & Launch Preparation | ~46 |
+| 5 | Apr 7 - Apr 20 | Analytics, Security Hardening & Launch | ~59 |
 
 ---
 
@@ -208,7 +208,7 @@
 ## Sprint 5: Analytics & Launch Preparation
 **Duration:** Apr 7 - Apr 20 (2 weeks)  
 **Status:** PLANNED  
-**Story Points:** ~46
+**Story Points:** ~59 (46 analytics + 13 security hardening)
 
 ### Goals
 - Build advanced analytics endpoints (trends, injury risk, production readiness)
@@ -236,12 +236,16 @@
 - **Backend (5 pts):** Performance optimization (US-054)
 - **Backend (4 pts):** Monitoring (US-055)
 - **Backend/Data/Frontend (6 pts):** Production launch (US-056)
+- **Backend (8 pts):** Security hardening - audit logging (BUG-002)
+- **Backend (5 pts):** Security hardening - rate limiting (BUG-003)
+- **Backend (3 pts):** Security hardening - error handling (BUG-004)
 
 ### Success Criteria
 - ✅ All analytics endpoints operational
 - ✅ Reports generating in < 30 seconds
 - ✅ API response times: p95 < 1 second
 - ✅ Monitoring dashboard live
+- ✅ Security hardening complete (audit logging, rate limiting, error handling)
 - ✅ Zero critical issues in production
 - ✅ Team trained and using platform
 - ✅ Full data pipeline running end-to-end (5 sources)
