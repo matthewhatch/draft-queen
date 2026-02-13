@@ -1,7 +1,7 @@
 """Configuration management for the NFL Draft Analysis Platform."""
 
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 from typing import Optional
 from pathlib import Path
 
@@ -19,16 +19,17 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     environment: str = "development"
+    admin_api_key: str = Field(..., min_length=32, description="Admin API key for protected endpoints")
     
     # Database
     db_host: str = "localhost"
     db_port: int = 5432
-    db_username: str = "postgres"
-    db_password: str = "postgres"
+    db_username: str = Field(..., description="PostgreSQL username (REQUIRED)")
+    db_password: str = Field(..., min_length=8, description="PostgreSQL password (REQUIRED, min 8 chars)")
     db_database: str = "nfl_draft"
     
     # Email
-    email_enabled: bool = True
+    email_enabled: bool = False
     
     # Scheduler
     scheduler_enabled: bool = True
@@ -45,6 +46,14 @@ class Settings(BaseSettings):
     logging_max_bytes: int = 10485760  # 10 MB
     logging_backup_count: int = 5
     logging_format: str = "json"
+    
+    @field_validator('db_password')
+    @classmethod
+    def validate_db_password(cls, v: str) -> str:
+        """Ensure database password meets minimum requirements."""
+        if len(v) < 8:
+            raise ValueError('DB_PASSWORD must be at least 8 characters')
+        return v
     
     @property
     def database_url(self) -> str:
