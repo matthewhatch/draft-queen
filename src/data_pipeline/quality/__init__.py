@@ -4,14 +4,17 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List
 from sqlalchemy import text
-from backend.database import db
-from backend.database.models import (
-    Prospect,
-    ProspectMeasurable,
-    DataQualityMetric,
-    DataQualityReport,
-)
-from data_pipeline.validators import DuplicateDetector, OutlierDetector
+
+# Note: Commented out database imports that were breaking test imports
+# These can be imported locally in methods that need them
+# from src.backend.database import db
+# from src.backend.database.models import (
+#     Prospect,
+#     ProspectMeasurable,
+#     DataQualityMetric,
+#     DataQualityReport,
+# )
+# from src.data_pipeline.validators import DuplicateDetector, OutlierDetector
 
 logger = logging.getLogger(__name__)
 

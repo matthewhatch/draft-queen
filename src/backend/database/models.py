@@ -52,6 +52,8 @@ class Prospect(Base):
     injuries = relationship("ProspectInjury", back_populates="prospect", cascade="all, delete-orphan")
     rankings = relationship("ProspectRanking", back_populates="prospect", cascade="all, delete-orphan")
     grades = relationship("ProspectGrade", back_populates="prospect", cascade="all, delete-orphan")
+    quality_alerts = relationship("QualityAlert", back_populates="prospect", cascade="all, delete-orphan")
+    grade_history = relationship("GradeHistory", back_populates="prospect", cascade="all, delete-orphan")
     
     # Constraints
     __table_args__ = (
@@ -368,5 +370,11 @@ class DataQualityReport(Base):
     )
 
 
-# Import ProspectGrade after Base and Prospect are defined to avoid circular imports
+# Import models after Base and Prospect are defined to avoid circular imports
 from data_pipeline.models.prospect_grades import ProspectGrade  # noqa: E402, F401
+from data_pipeline.models.quality import (  # noqa: E402, F401
+    QualityRule,
+    QualityAlert,
+    GradeHistory,
+    QualityMetric,
+)
