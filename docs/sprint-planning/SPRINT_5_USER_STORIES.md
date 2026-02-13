@@ -83,6 +83,23 @@ Expand data quality checks to include cross-source grade validation and outlier 
 - **Data:** 1 story point
 - **Total:** 4 story points
 
+### ✅ SPECIFICATION (Clarified)
+
+**Suspicious Grade Pattern Definition:**
+- Grade change > 2 standard deviations from position group mean (outlier detection)
+- Threshold is configurable per position via `quality_rules` table
+- Default thresholds:
+  - Position-specific: calculated from historical data
+  - Example: If CBs avg grade is 75±5, any CB with grade >85 or <65 flagged
+
+**Alert Escalation:**
+- Dashboard: All alerts visible in quality dashboard
+- Email: Send daily digest of critical alerts (> 3 std dev)
+- Logging: All alerts logged to `quality_alerts` table with timestamp, prospect, rule, severity
+
+**Implementation:**
+See [SPRINT_5_REVIEW.md](../decisions/SPRINT_5_REVIEW.md) for detailed methodology.
+
 ---
 
 ## US-050: Position Trend Analysis Endpoint
@@ -168,6 +185,58 @@ Create endpoint aggregating injury data: injury frequency, history summaries, po
 - **Data:** 3 story points
 - **Total:** 7 story points
 
+### ✅ SPECIFICATION (From INJURY_RISK_METHODOLOGY.md)
+
+**Risk Percentile Calculation:**
+- Percentile rank vs position group (0-100, where 100 = most injured)
+- Injury Burden Score formula:
+  ```
+  Score = (Base Injuries × 0.25) + (Severity Weighted × 0.35) + 
+           (Recurrence Penalty × 0.20) + (Days Missed × 0.20)
+  
+  Where:
+  - Base injuries: count × 10 points each
+  - Severity: Severe=3, Moderate=2, Minor=1 (weighted × 10)
+  - Recurrence: +20 per recurrence (same injury within 12 months)
+  - Days missed: (total_days / 365) × 20, capped at 100
+  ```
+
+**Recurrence Definition:**
+- Same injury type within 12 months
+- Example: ACL in 2023 + ACL in 2024 = 1 recurrence
+- Different injuries: not counted as recurrence
+
+**Related Prospects:**
+- Top 5 prospects with similar injury history
+- Filter by: same position + similar injury profile
+- Sort by: injury similarity score (highest match first)
+
+**Data Availability:**
+- Use available ESPN injury data from Sprint 3
+- Document gaps in sample size per position
+- Flag for data enrichment in future sprints
+
+**Response Example:**
+```json
+{
+  "prospect_id": "12345",
+  "injury_history": [
+    {"year": 2024, "injury": "ACL", "status": "recovered"},
+    {"year": 2023, "injury": "ACL", "status": "recovered"}
+  ],
+  "position": "WR",
+  "risk_percentile": 65,
+  "risk_percentile_description": "65th percentile for WR (higher = more injuries)",
+  "recurrence_risk": "high",
+  "related_prospects": [
+    {"id": "67890", "name": "Similar Player 1", "injuries": "ACL x2"},
+    {"id": "67891", "name": "Similar Player 2", "injuries": "ACL x2"}
+  ]
+}
+```
+
+See [INJURY_RISK_METHODOLOGY.md](../decisions/INJURY_RISK_METHODOLOGY.md) for full methodology.
+
 ---
 
 ## US-052: Production Readiness Prediction
@@ -210,6 +279,39 @@ Implement scoring algorithm predicting production readiness based on measurables
 - **Backend:** 3 story points
 - **Data:** 3 story points
 - **Total:** 6 story points
+
+### ✅ SPECIFICATION (From PRODUCTION_READINESS_SCORING.md)
+
+**Scoring Formula:**
+```
+Score = (Measurables × 0.40) + (College Production × 0.40) + (Age/Experience × 0.20) + Position Adjustment
+```
+
+**Score Range Interpretation:**
+- **80-100:** Ready for immediate NFL impact
+  - Excellent measurables for position
+  - Strong college production
+  - Likely Day 1-2 pick, high usage expected
+- **60-79:** Ready with coaching/development
+  - Good measurables, solid production
+  - May need technique refinement or scheme fit
+  - Day 2-3 picks, solid contributors
+- **40-59:** Developmental prospect
+  - Measurables OR production lags
+  - Upside potential but needs NFL coaching
+  - Day 3+ picks, need time to develop
+- **Below 40:** Significant concerns for NFL readiness
+  - Multiple factors below position norms
+  - Major gaps in measurables or production
+
+**Position-Specific Adjustments:**
+- QB: Emphasis on completion %, TD:INT ratio, college level (P5 vs G5)
+- RB: Yards per carry, yards per game, receiving role
+- WR: Catch percentage, yards per game, consistency
+- Edge: Sacks per game, pressures per game, consistency
+- DB: Interceptions, pass breakups, yards allowed inverse
+
+See [PRODUCTION_READINESS_SCORING.md](../decisions/PRODUCTION_READINESS_SCORING.md) for detailed formulas and position-specific metrics.
 
 ---
 
