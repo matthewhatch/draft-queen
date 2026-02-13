@@ -6,9 +6,9 @@ authors = ["Your Name <you@example.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "backend" },
-    { include = "data_pipeline" },
-    { include = "cli" },
+    { include = "backend", from = "src" },
+    { include = "data_pipeline", from = "src" },
+    { include = "cli", from = "src" },
 ]
 
 [tool.poetry.dependencies]
