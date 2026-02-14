@@ -4,6 +4,7 @@
   "description": "Quality Alert Dashboard for NFL Draft Queen - Real-time prospect quality monitoring",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
