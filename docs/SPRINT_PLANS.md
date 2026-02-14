@@ -15,7 +15,7 @@
 | 2 | Feb 24 - Mar 9 | Advanced Querying & Reporting | ~38 |
 | 3 | Mar 10-23 | Data Ingestion from Real Sources | ~44 |
 | 4 | Mar 24 - Apr 6 | PFF Data Integration & Premium Analytics | ~35 |
-| 5 | Apr 7 - Apr 20 | Analytics, Security Hardening & Launch | ~59 |
+| 5 | Apr 7 - Apr 20 | Analytics, Security & Notifications, Launch | ~67 |
 
 ---
 
@@ -208,7 +208,7 @@
 ## Sprint 5: Analytics & Launch Preparation
 **Duration:** Apr 7 - Apr 20 (2 weeks)  
 **Status:** PLANNED  
-**Story Points:** ~59 (46 analytics + 13 security hardening)
+**Story Points:** ~67 (46 analytics + 13 security + 8 notifications)
 
 ### Goals
 - Build advanced analytics endpoints (trends, injury risk, production readiness)
@@ -239,6 +239,7 @@
 - **Backend (8 pts):** Security hardening - audit logging (BUG-002)
 - **Backend (5 pts):** Security hardening - rate limiting (BUG-003)
 - **Backend (3 pts):** Security hardening - error handling (BUG-004)
+- **Backend (8 pts):** WhatsApp notification service (US-057)
 
 ### Success Criteria
 - ✅ All analytics endpoints operational

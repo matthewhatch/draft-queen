@@ -446,6 +446,245 @@ Implement monitoring for API health, database performance, data quality, and err
 
 ---
 
+## US-057: WhatsApp Notification Service
+
+### User Story
+As a **team member**  
+I want to **receive WhatsApp notifications about pipeline execution, data quality issues, and admin alerts**  
+So that **I can monitor system health and respond to critical issues in real-time**
+
+### Description
+Implement WhatsApp notification service for pipeline events, data quality alerts, and admin operations. Support configurable alert types, team member notification lists, and alert thresholds.
+
+### Use Cases
+1. **Pipeline Execution Status** - Success/failure notifications for daily pipeline runs
+2. **Data Quality Alerts** - Notify when quality metrics fall below thresholds
+3. **Admin Operations** - Alert when admin performs migrations, backups, pipeline triggers
+4. **Analyst Notifications** - Notify when new data is ready for analysis
+5. **Error Alerts** - Notify on critical API errors or system issues
+
+### Acceptance Criteria
+- [ ] WhatsApp integration via Twilio API
+- [ ] Configurable notification types (can enable/disable each alert type)
+- [ ] Team member phone number management
+- [ ] Notification templates for each alert type
+- [ ] Endpoint: `POST /admin/notifications/configure` (set notification preferences)
+- [ ] Endpoint: `POST /admin/notifications/test` (send test message)
+- [ ] Log all notifications sent (audit trail)
+- [ ] Rate limiting on notifications (don't spam team)
+- [ ] Error handling (failed sends logged, retried)
+
+### Technical Acceptance Criteria
+- [ ] Twilio account setup and API integration
+- [ ] Phone number validation (E.164 format)
+- [ ] Message templating system
+- [ ] Notification queue (handle async sending)
+- [ ] Notification logging to database
+- [ ] Configuration stored in database
+- [ ] Secure credential storage (Twilio API key)
+- [ ] Max 2 notifications per person per alert type per hour (rate limit)
+
+### Notification Types
+
+**1. Pipeline Execution (US-057-1)**
+```
+✅ Pipeline execution completed successfully
+Execution ID: exec_20260414_020000
+Duration: 2m 34s
+Prospects processed: 500
+New records: 23
+Updated: 45
+```
+
+**2. Data Quality Alert (US-057-2)**
+```
+⚠️ Data quality warning
+Metric: Prospect completeness
+Current: 87% (threshold: 95%)
+Missing data: Height (12 records), Weight (5 records)
+Action needed: Review and reconcile
+```
+
+**3. Admin Operation (US-057-3)**
+```
+🔧 Admin operation performed
+Action: Database migration
+User API Key: ***abc123
+Status: Success
+Timestamp: 2026-04-14 02:15 UTC
+```
+
+**4. Error Alert (US-057-4)**
+```
+❌ Critical error detected
+Error: Pipeline execution failed
+Component: PFF scraper
+Message: Connection timeout
+Timestamp: 2026-04-14 02:10 UTC
+Action: Check logs and retry manually
+```
+
+**5. Data Ready Alert (US-057-5)**
+```
+📊 New data available
+Type: Position trends analysis
+Prospects: 500
+Ready time: 2m 45s
+Data from: NFL.com, PFF.com, ESPN
+```
+
+### Configuration
+
+**Database Schema:**
+```sql
+CREATE TABLE notification_config (
+    id SERIAL PRIMARY KEY,
+    team_member_id VARCHAR(255),
+    phone_number VARCHAR(20),  -- E.164 format: +1234567890
+    alerts_enabled BOOLEAN DEFAULT true,
+    
+    -- Alert types (bitmask or individual booleans)
+    alert_pipeline BOOLEAN DEFAULT true,
+    alert_data_quality BOOLEAN DEFAULT true,
+    alert_admin BOOLEAN DEFAULT true,
+    alert_errors BOOLEAN DEFAULT true,
+    alert_analyst BOOLEAN DEFAULT true,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE notification_log (
+    id SERIAL PRIMARY KEY,
+    team_member_id VARCHAR(255),
+    phone_number VARCHAR(20),
+    alert_type VARCHAR(50),
+    message_text TEXT,
+    status VARCHAR(50),  -- "sent", "failed", "queued"
+    twilio_sid VARCHAR(255),
+    error_message TEXT,
+    sent_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Admin Configuration Endpoint
+
+**Set notification preferences:**
+```python
+POST /admin/notifications/configure
+Authorization: X-API-Key <ADMIN_API_KEY>
+Content-Type: application/json
+
+{
+  "team_member_id": "john.doe",
+  "phone_number": "+1234567890",
+  "alerts_enabled": true,
+  "alert_pipeline": true,
+  "alert_data_quality": true,
+  "alert_admin": true,
+  "alert_errors": true,
+  "alert_analyst": true
+}
+
+Response:
+{
+  "status": "configured",
+  "team_member_id": "john.doe",
+  "phone_number": "+1234567890",
+  "alerts": {
+    "pipeline": true,
+    "data_quality": true,
+    "admin": true,
+    "errors": true,
+    "analyst": true
+  }
+}
+```
+
+**Send test notification:**
+```python
+POST /admin/notifications/test
+Authorization: X-API-Key <ADMIN_API_KEY>
+
+{
+  "phone_number": "+1234567890",
+  "alert_type": "pipeline"  # or data_quality, admin, errors, analyst
+}
+
+Response:
+{
+  "status": "sent",
+  "message": "Test WhatsApp notification sent successfully",
+  "twilio_sid": "SM1234567890abcdef"
+}
+```
+
+### Integration Points
+
+1. **Pipeline Scheduler** - Send notification after pipeline completes
+   ```python
+   def _daily_load_job(self):
+       result = load_nfl_com_data()
+       notify_pipeline_execution(result)  # New
+   ```
+
+2. **Data Quality Checks** - Send alert if thresholds crossed
+   ```python
+   def run_quality_checks(self):
+       result = check_data_completeness()
+       if result['completeness'] < 95:
+           notify_quality_alert(result)  # New
+   ```
+
+3. **Admin Operations** - Log and notify
+   ```python
+   @admin_router.post("/admin/db/migrate")
+   async def run_migrations(admin_token: str = Depends(verify_admin_token)):
+       result = subprocess.run(...)
+       notify_admin_operation("db_migrate", result)  # New
+   ```
+
+### Tasks
+- **Backend:** Set up Twilio account and API integration
+- **Backend:** Create notification service module
+- **Backend:** Build configuration endpoints
+- **Backend:** Implement notification queue (async)
+- **Backend:** Add notification logging
+- **Backend:** Integrate with pipeline scheduler
+- **Backend:** Integrate with quality checks
+- **Backend:** Integrate with admin operations
+- **Backend:** Write unit tests for notification service
+
+### Definition of Done
+- [ ] WhatsApp notifications sending successfully
+- [ ] Configuration endpoints working
+- [ ] Notifications logged to database
+- [ ] Rate limiting working
+- [ ] Admin can test notifications
+- [ ] All alert types triggered correctly
+- [ ] Error handling in place
+- [ ] Tests passing
+- [ ] Documentation complete
+
+### Effort
+- **Backend:** 8 story points
+- **Total:** 8 story points
+
+### Dependencies
+- Twilio account with WhatsApp API enabled
+- Team members provide phone numbers
+- Admin configures notification preferences
+
+### Future Enhancements
+- Slack integration
+- Email digest summaries
+- SMS fallback
+- Notification history dashboard
+- Alert severity levels
+- Snooze alerts temporarily
+
+---
+
 ## US-056: Production Deployment and Launch
 
 ### User Story
@@ -498,7 +737,7 @@ Final deployment: database migration, API deployment, Jupyter notebook setup, do
 
 ## Sprint 5 Summary
 
-**Total Story Points:** ~46 points
+**Total Story Points:** ~54 points (46 analytics + 8 notifications)
 
 **Key Outcomes:**
 - ✅ Position trend analysis available
@@ -506,11 +745,12 @@ Final deployment: database migration, API deployment, Jupyter notebook setup, do
 - ✅ Production readiness scoring active
 - ✅ Batch reports generating
 - ✅ API performance optimized
+- ✅ WhatsApp notifications configured and operational
 - ✅ Monitoring and alerting operational
 - ✅ Platform launched to production
 - ✅ Team trained and using platform
 
 **Post-Sprint Activities:**
-- Monitor system performance
+- Monitor system performance and notifications
 - Gather user feedback
-- Plan enhancements for 2.0 release
+- Plan enhancements for 2.0 release (Slack, SMS, Email)

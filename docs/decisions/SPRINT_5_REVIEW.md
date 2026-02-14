@@ -1,7 +1,7 @@
 # Sprint 5 Story Review & Questions
-**Date:** February 13, 2026  
+**Date:** February 14, 2026  
 **Status:** Ready for Sprint Planning  
-**Total Points:** 59 (46 analytics + 13 security)
+**Total Points:** 67 (46 analytics + 13 security + 8 notifications)
 
 ---
 
@@ -311,6 +311,59 @@ raise HTTPException(status_code=500, detail="Query execution failed")
 
 ---
 
+## WhatsApp Notification Service - Sprint 5 Addition
+
+### ✅ US-057: WhatsApp Notification Service (8 pts)
+**Status:** Well-defined ✓
+
+**Use Cases:**
+1. Pipeline execution status (success/failure)
+2. Data quality alerts (thresholds breached)
+3. Admin operations (migrations, backups, triggers)
+4. Error alerts (critical issues)
+5. Analyst notifications (data ready)
+
+**Key Features:**
+- Twilio WhatsApp API integration
+- Configurable alerts (enable/disable per type)
+- Team member phone number management
+- Rate limiting (max 2 per person/hour per alert type)
+- Notification logging to database
+- Test endpoint for admin verification
+
+**Example Notification:**
+```
+✅ Pipeline execution completed successfully
+Execution ID: exec_20260414_020000
+Duration: 2m 34s
+Prospects processed: 500
+New records: 23
+Updated: 45
+```
+
+**Configuration Endpoint:**
+```python
+POST /admin/notifications/configure
+{
+  "team_member_id": "john.doe",
+  "phone_number": "+1234567890",
+  "alert_pipeline": true,
+  "alert_data_quality": true,
+  "alert_admin": true,
+  "alert_errors": true,
+  "alert_analyst": true
+}
+```
+
+**Integration Points:**
+- Pipeline scheduler (notify after job completes)
+- Quality check runner (notify on threshold breach)
+- Admin operations (log and notify)
+
+**No blocking questions** ✓
+
+---
+
 ## Summary: Questions to Address Before Sprint Starts
 
 ### HIGH PRIORITY - Address Before Sprint 5:
@@ -320,6 +373,7 @@ raise HTTPException(status_code=500, detail="Query execution failed")
 ### MEDIUM PRIORITY - Document in Story:
 3. Add `docs/decisions/PRODUCTION_READINESS_SCORING.md` with exact formula and examples
 4. Add `docs/decisions/INJURY_RISK_METHODOLOGY.md` with percentile calculation
+5. **US-057 (WhatsApp):** Confirm Twilio account setup, get team member phone numbers
 
 ### NICE TO HAVE:
 5. Create deployment checklist template in `docs/guides/DEPLOYMENT_CHECKLIST.md`
@@ -333,17 +387,21 @@ raise HTTPException(status_code=500, detail="Query execution failed")
 - [ ] Data engineer confirms injury data availability
 - [ ] Decide on production readiness scoring formula
 - [ ] Define rate limiting strategy confirmation
+- [ ] **Twilio Account Setup:** Create account, get API credentials
+- [ ] **Collect Phone Numbers:** Get team member WhatsApp phone numbers
 
 ### At Sprint Planning:
 - [ ] Review these clarifications with team
 - [ ] Assign team members with clear ownership
 - [ ] Break US-051 and US-052 into smaller subtasks if needed
 - [ ] Define acceptance test cases for scoring algorithms
+- [ ] **Notification Service:** Plan Twilio API integration, database schema
 
 ### During Sprint:
 - [ ] Spike on scoring formula validation (compare to historical data)
 - [ ] Weekly review of analytics endpoints for quality
 - [ ] Early load testing (don't wait until end of sprint)
+- [ ] **Notification Service:** Test WhatsApp API, verify message delivery
 
 ---
 
