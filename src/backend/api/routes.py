@@ -16,6 +16,12 @@ from backend.api.schemas import (
     PositionStatisticsResponse, PositionsSummaryResponse,
     TopProspectsResponse, RankedProspect, CompositeScoreResponse, CompositeScore
 )
+from backend.api.quality_schemas import (
+    AlertResponse, AlertListResponse, AlertSummaryResponse, 
+    AlertDigestResponse, AcknowledgeAlertRequest, BulkAcknowledgeRequest,
+    BulkAcknowledgeResponse
+)
+from backend.api.quality_service import QualityAPIService
 from backend.api.query_service import QueryService
 from backend.api.export_service import ExportService, ExportFormat
 from backend.api.analytics_service import AnalyticsService
@@ -70,6 +76,7 @@ query_router = APIRouter(prefix="/api/prospects", tags=["prospects"])
 export_router = APIRouter(prefix="/api/exports", tags=["exports"])
 analytics_router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 ranking_router = APIRouter(prefix="/api/ranking", tags=["ranking"])
+quality_router = APIRouter(prefix="/api/quality", tags=["quality"])
 admin_router = APIRouter(prefix="/api", tags=["admin"])
 
 
@@ -961,3 +968,262 @@ async def retry_pipeline(execution_id: str = Path(..., description="Execution ID
     except Exception as e:
         logger.error(f"Retry failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Retry failed: {str(e)}")
+
+
+# ============================================================================
+# Quality and Alert Endpoints
+# ============================================================================
+
+@quality_router.get(
+    "/alerts",
+    response_model=AlertListResponse,
+    summary="Get recent quality alerts",
+    description="Retrieve recent quality alerts with optional filtering"
+)
+async def get_alerts(
+    days: int = Query(1, ge=1, le=365, description="Days to look back"),
+    severity: Optional[str] = Query(None, description="Filter by severity: info, warning, critical"),
+    acknowledged: Optional[bool] = Query(None, description="Filter by acknowledgment status"),
+    position: Optional[str] = Query(None, description="Filter by position"),
+    source: Optional[str] = Query(None, description="Filter by grade source"),
+    skip: int = Query(0, ge=0, description="Records to skip"),
+    limit: int = Query(50, ge=1, le=500, description="Maximum records to return"),
+    session: Session = Depends(db.get_session)
+) -> AlertListResponse:
+    """
+    Retrieve recent quality alerts with optional filtering.
+    
+    **Parameters:**
+    - days: Number of days to look back (default: 1)
+    - severity: Filter by severity level
+    - acknowledged: Filter by acknowledgment status
+    - position: Filter by specific position (e.g., 'QB', 'WR')
+    - source: Filter by grade source (e.g., 'pff', 'espn')
+    - skip: For pagination
+    - limit: Maximum records (1-500)
+    
+    **Example:**
+    `GET /api/quality/alerts?days=7&severity=critical&position=QB`
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.get_recent_alerts(
+            days=days,
+            severity=severity,
+            acknowledged=acknowledged,
+            position=position,
+            source=source,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve alerts: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.get(
+    "/alerts/by-position/{position}",
+    response_model=AlertListResponse,
+    summary="Get alerts for specific position",
+    description="Retrieve alerts for a specific position"
+)
+async def get_alerts_by_position(
+    position: str = Path(..., description="Position code (e.g., 'QB', 'RB')"),
+    days: int = Query(7, ge=1, le=365, description="Days to look back"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    session: Session = Depends(db.get_session)
+) -> AlertListResponse:
+    """
+    Retrieve alerts for a specific position.
+    
+    **Parameters:**
+    - position: Position code (e.g., 'QB', 'RB', 'WR', 'TE')
+    - days: Number of days to look back
+    - severity: Optional severity filter
+    
+    **Example:**
+    `GET /api/quality/alerts/by-position/QB?days=7`
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.get_alerts_by_position(
+            position=position,
+            days=days,
+            severity=severity,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve position alerts: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.get(
+    "/alerts/by-source/{source}",
+    response_model=AlertListResponse,
+    summary="Get alerts for specific source",
+    description="Retrieve alerts for a specific grade source"
+)
+async def get_alerts_by_source(
+    source: str = Path(..., description="Grade source (e.g., 'pff', 'espn')"),
+    days: int = Query(7, ge=1, le=365, description="Days to look back"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    session: Session = Depends(db.get_session)
+) -> AlertListResponse:
+    """
+    Retrieve alerts for a specific grade source.
+    
+    **Parameters:**
+    - source: Grade source (e.g., 'pff', 'espn')
+    - days: Number of days to look back
+    - severity: Optional severity filter
+    
+    **Example:**
+    `GET /api/quality/alerts/by-source/pff?severity=critical`
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.get_alerts_by_source(
+            source=source,
+            days=days,
+            severity=severity,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve source alerts: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.get(
+    "/alerts/summary",
+    response_model=AlertSummaryResponse,
+    summary="Get alert summary statistics",
+    description="Retrieve aggregated alert statistics"
+)
+async def get_alert_summary(
+    days: int = Query(7, ge=1, le=365, description="Days to look back"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    session: Session = Depends(db.get_session)
+) -> AlertSummaryResponse:
+    """
+    Get alert summary statistics including counts by position, source, and type.
+    
+    **Parameters:**
+    - days: Number of days to look back
+    - severity: Optional severity filter
+    
+    **Example:**
+    `GET /api/quality/alerts/summary?days=7`
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.get_alert_summary(days=days, severity=severity)
+    except Exception as e:
+        logger.error(f"Failed to retrieve alert summary: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.post(
+    "/alerts/{alert_id}/acknowledge",
+    response_model=AlertResponse,
+    summary="Acknowledge a single alert",
+    description="Mark an alert as acknowledged"
+)
+async def acknowledge_alert(
+    alert_id: str = Path(..., description="Alert ID (UUID)"),
+    request: AcknowledgeAlertRequest = Body(...),
+    session: Session = Depends(db.get_session)
+) -> AlertResponse:
+    """
+    Mark a single alert as acknowledged.
+    
+    **Parameters:**
+    - alert_id: UUID of the alert to acknowledge
+    - acknowledged_by: User or system name (in request body)
+    
+    **Example:**
+    ```json
+    POST /api/quality/alerts/{alert_id}/acknowledge
+    {
+        "acknowledged_by": "john.doe@example.com"
+    }
+    ```
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.acknowledge_alert(alert_id, request.acknowledged_by)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to acknowledge alert: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.post(
+    "/alerts/acknowledge-bulk",
+    response_model=BulkAcknowledgeResponse,
+    summary="Acknowledge multiple alerts",
+    description="Acknowledge multiple alerts at once"
+)
+async def acknowledge_multiple_alerts(
+    request: BulkAcknowledgeRequest = Body(...),
+    session: Session = Depends(db.get_session)
+) -> BulkAcknowledgeResponse:
+    """
+    Acknowledge multiple alerts at once.
+    
+    **Example:**
+    ```json
+    POST /api/quality/alerts/acknowledge-bulk
+    {
+        "alert_ids": ["uuid-1", "uuid-2", "uuid-3"],
+        "acknowledged_by": "john.doe@example.com"
+    }
+    ```
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.acknowledge_multiple_alerts(
+            request.alert_ids,
+            request.acknowledged_by
+        )
+    except Exception as e:
+        logger.error(f"Failed to acknowledge multiple alerts: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@quality_router.get(
+    "/alerts/digest",
+    response_model=AlertDigestResponse,
+    summary="Get alert digest for email preview",
+    description="Retrieve the alert digest that would be sent via email"
+)
+async def get_alert_digest(
+    days: int = Query(1, ge=1, le=7, description="Days to include in digest"),
+    session: Session = Depends(db.get_session)
+) -> AlertDigestResponse:
+    """
+    Get the alert digest that would be sent via email.
+    
+    **Parameters:**
+    - days: Number of days to include
+    
+    **Returns:**
+    - subject: Email subject line
+    - body: Email body (HTML)
+    - alert counts by severity
+    
+    **Example:**
+    `GET /api/quality/alerts/digest?days=1`
+    """
+    try:
+        service = QualityAPIService(session)
+        return service.get_alert_digest(days_back=days)
+    except Exception as e:
+        logger.error(f"Failed to retrieve alert digest: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

@@ -22,13 +22,12 @@ httpx==0.25.2
 apscheduler==3.10.4
 
 # Logging & Monitoring
-python-logging-loki==0.3.2
+python-logging-loki==0.3.1
 
 # Testing
 pytest==7.4.3
 pytest-cov==4.1.0
 pytest-asyncio==0.21.1
-httpx-mock==0.4.0
 
 # Code Quality
 black==23.12.0
