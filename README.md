@@ -11,7 +11,9 @@ Internal data analytics platform for NFL draft evaluation. Built with Python, Fa
 ## 📚 Quick Links
 
 - **📖 [Documentation](docs/)** - All project docs, guides, and architecture decisions
-- **🚀 [Getting Started](docs/GETTING_STARTED.md)** - Setup in 5 minutes
+- **⚡ [Running Locally](docs/RUNNING_LOCALLY.md)** - Quick 5-minute startup guide
+- **🚀 [Getting Started](docs/GETTING_STARTED.md)** - Comprehensive setup guide
+- **🚢 [Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment & Docker
 - **📅 [Sprint Plans](docs/sprint-planning/SPRINT_PLANS.md)** - Roadmap and user stories
 - **🏗️ [Architecture](docs/architecture/)** - 10 Architecture Decision Records (ADRs)
 - **👨‍💻 [Team Guides](docs/guides/)** - Role-specific implementation guides
