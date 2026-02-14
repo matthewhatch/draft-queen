@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { AlertList } from './AlertList'
-import { AlertSummary } from './AlertSummary'
+import AlertList from './AlertList'
+import AlertSummary from './AlertSummary'
 
 export interface Alert {
   id: string

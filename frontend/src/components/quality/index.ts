@@ -12,6 +12,7 @@ export { default as AlertCard } from './AlertCard'
 export { default as AlertList } from './AlertList'
 export { default as AlertSummary } from './AlertSummary'
 export { QualityDashboard } from './QualityDashboard'
+export type { Alert } from './QualityDashboard'
 
 export { default as AlertList } from './AlertList';
 export { default as AlertSummary } from './AlertSummary';
