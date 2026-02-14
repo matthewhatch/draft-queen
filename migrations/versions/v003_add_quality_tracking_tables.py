@@ -1,5 +1,9 @@
 """Add quality tracking tables for grade validation and alerting.
 
+Revision ID: v003_add_quality_tracking_tables
+Revises: v002_add_prospect_grades_table
+Create Date: 2026-02-14 15:00:00.000000
+
 For US-044: Enhanced Data Quality for Multi-Source Grades
 
 This migration creates:
@@ -13,6 +17,12 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 import uuid
+
+# Alembic version control info
+revision = 'v003_add_quality_tracking_tables'
+down_revision = 'v002_add_prospect_grades_table'
+branch_labels = None
+depends_on = None
 
 
 def upgrade():

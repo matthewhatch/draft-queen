@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from enum import Enum
 
-from src.backend.database.models import Base
+from backend.database.models import Base
 
 
 class AlertType(Enum):
@@ -116,7 +116,7 @@ class QualityAlert(Base):
     )
     prospect_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("prospects.prospect_id", ondelete="CASCADE"),
+        ForeignKey("prospects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -193,7 +193,7 @@ class GradeHistory(Base):
     )
     prospect_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("prospects.prospect_id", ondelete="CASCADE"),
+        ForeignKey("prospects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

@@ -16,6 +16,9 @@ class AlertSeverityEnum(str, Enum):
 
 class AlertTypeEnum(str, Enum):
     """Alert types."""
+    OUTLIER = "outlier"
+    GRADE_CHANGE = "grade_change"
+    DATA_COMPLETENESS = "data_completeness"
     LOW_COVERAGE = "low_coverage"
     LOW_VALIDATION = "low_validation"
     HIGH_OUTLIERS = "high_outliers"
@@ -27,19 +30,24 @@ class AlertTypeEnum(str, Enum):
 class AlertResponse(BaseModel):
     """Schema for individual alert response."""
     
-    id: Union[str, UUID] = Field(description="Alert ID (UUID)")
+    alert_id: Union[str, UUID] = Field(description="Alert ID (UUID)")
+    prospect_id: Union[str, UUID] = Field(description="Prospect ID (UUID)")
+    rule_id: Optional[Union[str, UUID]] = Field(None, description="Rule ID (UUID)")
     alert_type: AlertTypeEnum = Field(description="Type of alert")
     severity: AlertSeverityEnum = Field(description="Severity level")
-    message: str = Field(description="Human-readable alert message")
-    position: Optional[str] = Field(None, description="Position code (e.g., 'QB', 'RB')")
     grade_source: Optional[str] = Field(None, description="Grade source (e.g., 'pff', 'espn')")
-    metric_value: Optional[float] = Field(None, description="Current metric value")
-    threshold_value: Optional[float] = Field(None, description="Threshold that was breached")
-    quality_score: Optional[float] = Field(None, description="Overall quality score")
-    generated_at: datetime = Field(description="When the alert was generated")
-    acknowledged: bool = Field(default=False, description="Whether alert has been acknowledged")
-    acknowledged_by: Optional[str] = Field(None, description="User or system that acknowledged")
-    acknowledged_at: Optional[datetime] = Field(None, description="When alert was acknowledged")
+    field_name: Optional[str] = Field(None, description="Field that triggered the alert")
+    field_value: Optional[str] = Field(None, description="Current field value")
+    expected_value: Optional[str] = Field(None, description="Expected field value")
+    review_status: str = Field(description="Status: pending, reviewed, escalated")
+    reviewed_by: Optional[str] = Field(None, description="User or system that reviewed")
+    reviewed_at: Optional[datetime] = Field(None, description="When alert was reviewed")
+    review_notes: Optional[str] = Field(None, description="Notes on the review")
+    escalated_at: Optional[datetime] = Field(None, description="When alert was escalated")
+    escalation_reason: Optional[str] = Field(None, description="Reason for escalation")
+    alert_metadata: Optional[str] = Field(None, description="Additional metadata as JSON string")
+    created_at: datetime = Field(description="When the alert was created")
+    updated_at: datetime = Field(description="When the alert was last updated")
     
     model_config = ConfigDict(from_attributes=True)
 

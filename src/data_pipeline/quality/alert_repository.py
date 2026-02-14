@@ -37,13 +37,11 @@ class AlertRepository:
             alert: Alert dictionary with:
                 - alert_type: str
                 - severity: str
-                - message: str
-                - metric_value: float
-                - threshold_value: float
-                - position: Optional[str]
+                - alert_type: str
+                - field_value: str
+                - expected_value: str
                 - grade_source: Optional[str]
-                - quality_score: float
-                - generated_at: datetime
+                - field_name: Optional[str]
             metric_id: Optional reference to QualityMetric
         
         Returns:
@@ -53,27 +51,23 @@ class AlertRepository:
             Exception: If database operation fails
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
-            alert_id = str(uuid4())
+            alert_id = uuid4()
             
             # Create alert record
             quality_alert = QualityAlert(
                 alert_id=alert_id,
-                metric_id=metric_id,
+                prospect_id=alert.get('prospect_id'),
+                rule_id=alert.get('rule_id'),
                 alert_type=alert.get('alert_type'),
                 severity=alert.get('severity'),
-                message=alert.get('message'),
-                metric_value=alert.get('metric_value'),
-                threshold_value=alert.get('threshold_value'),
-                position=alert.get('position'),
                 grade_source=alert.get('grade_source'),
-                quality_score=alert.get('quality_score'),
-                generated_at=alert.get('generated_at', datetime.utcnow()),
-                acknowledged=False,
-                acknowledged_by=None,
-                acknowledged_at=None,
-                created_at=datetime.utcnow(),
+                field_name=alert.get('field_name'),
+                field_value=alert.get('field_value'),
+                expected_value=alert.get('expected_value'),
+                review_status='pending',
+                alert_metadata=alert.get('alert_metadata'),
             )
             
             self.session.add(quality_alert)
@@ -123,14 +117,14 @@ class AlertRepository:
             List of alert dictionaries
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             cutoff_date = datetime.utcnow() - timedelta(days=days)
             
             # Build query
             query = self.session.query(QualityAlert).filter(
-                QualityAlert.generated_at >= cutoff_date
-            ).order_by(QualityAlert.generated_at.desc())
+                QualityAlert.created_at >= cutoff_date
+            ).order_by(QualityAlert.created_at.desc())
             
             # Apply optional filters
             if severity:
@@ -164,14 +158,14 @@ class AlertRepository:
             List of alert dictionaries
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             cutoff_date = datetime.utcnow() - timedelta(days=days)
             
             query = self.session.query(QualityAlert).filter(
                 QualityAlert.position == position,
-                QualityAlert.generated_at >= cutoff_date
-            ).order_by(QualityAlert.generated_at.desc())
+                QualityAlert.created_at >= cutoff_date
+            ).order_by(QualityAlert.created_at.desc())
             
             if severity:
                 query = query.filter(QualityAlert.severity == severity)
@@ -198,14 +192,14 @@ class AlertRepository:
             List of alert dictionaries
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             cutoff_date = datetime.utcnow() - timedelta(days=days)
             
             query = self.session.query(QualityAlert).filter(
                 QualityAlert.grade_source == source,
-                QualityAlert.generated_at >= cutoff_date
-            ).order_by(QualityAlert.generated_at.desc())
+                QualityAlert.created_at >= cutoff_date
+            ).order_by(QualityAlert.created_at.desc())
             
             if severity:
                 query = query.filter(QualityAlert.severity == severity)
@@ -230,7 +224,7 @@ class AlertRepository:
             True if successful, False otherwise
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             alert = self.session.query(QualityAlert).filter(
                 QualityAlert.alert_id == alert_id
@@ -264,7 +258,7 @@ class AlertRepository:
             Count of unacknowledged alerts
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             query = self.session.query(QualityAlert).filter(
                 QualityAlert.acknowledged == False
@@ -289,13 +283,13 @@ class AlertRepository:
             Count of deleted alerts
         """
         try:
-            from src.data_pipeline.models.quality import QualityAlert
+            from data_pipeline.models.quality import QualityAlert
             
             cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
             
             # Get alerts to delete
             alerts_to_delete = self.session.query(QualityAlert).filter(
-                QualityAlert.generated_at < cutoff_date
+                QualityAlert.created_at < cutoff_date
             ).all()
             
             count = len(alerts_to_delete)
@@ -323,19 +317,22 @@ class AlertRepository:
             Dictionary representation of alert
         """
         return {
-            'alert_id': alert.alert_id,
-            'metric_id': alert.metric_id,
+            'alert_id': str(alert.alert_id),
+            'prospect_id': str(alert.prospect_id),
+            'rule_id': str(alert.rule_id) if alert.rule_id else None,
             'alert_type': alert.alert_type,
             'severity': alert.severity,
-            'message': alert.message,
-            'metric_value': alert.metric_value,
-            'threshold_value': alert.threshold_value,
-            'position': alert.position,
             'grade_source': alert.grade_source,
-            'quality_score': alert.quality_score,
-            'generated_at': alert.generated_at,
-            'acknowledged': alert.acknowledged,
-            'acknowledged_by': alert.acknowledged_by,
-            'acknowledged_at': alert.acknowledged_at,
+            'field_name': alert.field_name,
+            'field_value': alert.field_value,
+            'expected_value': alert.expected_value,
+            'review_status': alert.review_status,
+            'reviewed_by': alert.reviewed_by,
+            'reviewed_at': alert.reviewed_at,
+            'review_notes': alert.review_notes,
+            'escalated_at': alert.escalated_at,
+            'escalation_reason': alert.escalation_reason,
+            'alert_metadata': alert.alert_metadata,
             'created_at': alert.created_at,
+            'updated_at': alert.updated_at,
         }

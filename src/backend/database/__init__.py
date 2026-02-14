@@ -4,10 +4,9 @@ from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
-from src.config import settings
-from src.backend.database.models import Base
+from config import settings
+from backend.database.models import Base
 import logging
-
 logger = logging.getLogger(__name__)
 
 
