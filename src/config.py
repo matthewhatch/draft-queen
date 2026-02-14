@@ -28,8 +28,18 @@ class Settings(BaseSettings):
     db_password: str = Field(..., min_length=8, description="PostgreSQL password (REQUIRED, min 8 chars)")
     db_database: str = "nfl_draft"
     
-    # Email
+    # Email configuration
     email_enabled: bool = False
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    sender_email: str = "noreply@draft-queen.local"
+    sender_name: str = "Draft Queen Alerts"
+    use_tls: bool = True
+    alert_recipients: str = Field(default="", description="Comma-separated email addresses for alerts")
+    daily_digest_time: str = "09:00"  # 9 AM EST
+    morning_summary_time: str = "08:00"  # 8 AM EST
     
     # Scheduler
     scheduler_enabled: bool = True
