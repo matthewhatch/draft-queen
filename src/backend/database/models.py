@@ -147,6 +147,31 @@ class ProspectStats(Base):
         Index("idx_stats_season", "season"),
     )
 
+class ProspectGrade(Base):
+    """Prospect grades from various sources (PFF, ESPN, etc.)."""
+    
+    __tablename__ = "prospect_grades"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    prospect_id = Column(UUID(as_uuid=True), ForeignKey("prospects.id", ondelete="CASCADE"), nullable=False, index=True)
+    source = Column(String(50), nullable=False, index=True)          # "pff", "espn", "nfl", etc.
+    grade_overall = Column(Float, nullable=True)                      # PFF 0–100 scale (store raw)
+    grade_normalized = Column(Float, nullable=True)                   # Normalized to 5.0–10.0 scale
+    grade_position = Column(String(10), nullable=True)                # Position at time of grading (PFF-native, e.g. "LT")
+    match_confidence = Column(Float, nullable=True)                   # Fuzzy-match score 0–100
+    grade_date = Column(DateTime, nullable=True)                      # Date grade was issued
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(50), default="pff_loader")
+    
+    # Relationship back to Prospect
+    prospect = relationship("Prospect", back_populates="grades")
+    
+    __table_args__ = (
+        UniqueConstraint("prospect_id", "source", "grade_date", name="uq_prospect_grade_source_date"),
+        Index("idx_grade_source", "source"),
+        Index("idx_grade_prospect", "prospect_id"),
+    )
 
 class ProspectInjury(Base):
     """Injury history."""
@@ -370,11 +395,6 @@ class DataQualityReport(Base):
     )
 
 
-# Import models after Base and Prospect are defined to avoid circular imports
-from data_pipeline.models.prospect_grades import ProspectGrade  # noqa: E402, F401
-from data_pipeline.models.quality import (  # noqa: E402, F401
-    QualityRule,
-    QualityAlert,
-    GradeHistory,
-    QualityMetric,
-)
+# Note: data_pipeline models are imported elsewhere to avoid circular imports
+# ProspectGrade, QualityRule, QualityAlert, GradeHistory, QualityMetric
+# are defined in data_pipeline.models.* and imported when needed

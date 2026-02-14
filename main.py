@@ -3,7 +3,12 @@
 import logging
 import logging.handlers
 import os
+import sys
 from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 from config import settings
 from backend.database import db
 from apscheduler.schedulers.background import BackgroundScheduler
