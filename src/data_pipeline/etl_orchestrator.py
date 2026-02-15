@@ -260,17 +260,14 @@ class ETLOrchestrator:
                         'pff' as source, COUNT(*) as count FROM pff_staging WHERE extraction_id = :id
                     UNION ALL
                     SELECT 'cfr' as source, COUNT(*) as count FROM cfr_staging WHERE extraction_id = :id
-                    UNION ALL
-                    SELECT 'nfl' as source, COUNT(*) as count FROM nfl_staging WHERE extraction_id = :id
-                    UNION ALL
-                    SELECT 'yahoo' as source, COUNT(*) as count FROM yahoo_staging WHERE extraction_id = :id
                     """
                 ),
                 {"id": extraction_id},
             )
 
             staging_counts = {}
-            for source, count in result:
+            rows = result.fetchall()
+            for source, count in rows:
                 staging_counts[source] = count
 
             phase.details = {"staging_counts": staging_counts}
@@ -491,7 +488,7 @@ class ETLOrchestrator:
                 )
             )
 
-            counts = await result.fetchone()
+            counts = result.fetchone()
             execution.total_prospects_loaded = counts[0]
             execution.total_grades_loaded = counts[1]
             execution.total_measurements_loaded = counts[2]
@@ -580,6 +577,7 @@ class ETLOrchestrator:
                     await self.db.execute(text(f"REFRESH MATERIALIZED VIEW {view}"))
                     view_count += 1
                 except Exception as e:
+                    # Views may not exist in test/dev environments - just warn and continue
                     logger.warning(f"Failed to refresh {view}: {e}")
 
             phase.details = {"views_refreshed": view_count}

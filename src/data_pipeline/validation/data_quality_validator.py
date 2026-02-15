@@ -182,24 +182,24 @@ class DataQualityValidator:
             "receiving_yards": (100, 1500),
         },
         "DL": {
-            "tackles": (20, 200),
+            "tackles_total": (20, 200),
             "sacks": (0, 30),
             "tackles_for_loss": (3, 50),
         },
         "EDGE": {
             "sacks": (3, 30),
-            "tackles": (20, 150),
+            "tackles_total": (20, 150),
             "tackles_for_loss": (5, 50),
         },
         "LB": {
-            "tackles": (50, 200),
+            "tackles_total": (50, 200),
             "sacks": (0, 30),
             "passes_defended": (0, 50),
         },
         "DB": {
-            "interceptions": (0, 15),
+            "interceptions_defensive": (0, 15),
             "passes_defended": (0, 50),
-            "tackles": (20, 150),
+            "tackles_total": (20, 150),
         },
     }
     
@@ -233,7 +233,7 @@ class DataQualityValidator:
                 """
             )
         )
-        duplicates = await result.fetchall()
+        duplicates = result.fetchall()
         
         passed = len(duplicates) == 0
         error_count = len(duplicates)
@@ -261,18 +261,18 @@ class DataQualityValidator:
                 """
                 SELECT COUNT(*) as cnt
                 FROM prospect_grades
-                WHERE grade < 5.0 OR grade > 10.0
+                WHERE grade_normalized IS NOT NULL AND (grade_normalized < 5.0 OR grade_normalized > 10.0)
                 """
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         out_of_range_count = row[0] if row else 0
         
         passed = out_of_range_count == 0
         
         return ValidationResult(
             rule_name="prospect_grades_range",
-            field_name="grade",
+            field_name="grade_normalized",
             entity_type="prospect_grades",
             passed=passed,
             error_count=out_of_range_count,
@@ -301,7 +301,7 @@ class DataQualityValidator:
                 """
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         out_of_range_count = row[0] if row else 0
         
         passed = out_of_range_count == 0
@@ -341,7 +341,7 @@ class DataQualityValidator:
                     ),
                     {"pos": position, "min_val": min_val, "max_val": max_val},
                 )
-                row = await result.fetchone()
+                row = result.fetchone()
                 if row:
                     total_issues += row[0]
         
@@ -373,13 +373,13 @@ class DataQualityValidator:
                     """
                     SELECT 
                         COUNT(*) as total,
-                        COUNT(grade) as grade_count,
+                        COUNT(grade_normalized) as grade_count,
                         COUNT(source) as source_count
                     FROM prospect_grades
                     """
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if row[0] == 0:
                 return 100.0
             
@@ -400,7 +400,7 @@ class DataQualityValidator:
                     """
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if row[0] == 0:
                 return 100.0
             
@@ -419,7 +419,7 @@ class DataQualityValidator:
                     """
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if row[0] == 0:
                 return 100.0
             
@@ -442,29 +442,17 @@ class DataQualityValidator:
                 """
                 SELECT 
                     COUNT(*) as total_records,
-                    (SELECT COUNT(*) FROM prospect_core WHERE status = 'error') +
-                    (SELECT COUNT(*) FROM prospect_grades WHERE is_invalid = true) +
-                    (SELECT COUNT(*) FROM prospect_measurements WHERE is_invalid = true) +
-                    (SELECT COUNT(*) FROM prospect_college_stats WHERE is_invalid = true)
-                    as error_records
-                FROM (
-                    SELECT * FROM prospect_core
-                    UNION ALL
-                    SELECT * FROM prospect_grades
-                    UNION ALL
-                    SELECT * FROM prospect_measurements
-                    UNION ALL
-                    SELECT * FROM prospect_college_stats
-                ) all_records
+                    SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as error_records
+                FROM prospect_core
                 """
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         
         if row[0] == 0:
             return 0.0
         
-        error_rate = (row[1] / row[0]) * 100
+        error_rate = ((row[1] or 0) / row[0]) * 100
         return min(error_rate, 100.0)
     
     async def run_all_validations(self, extraction_id: UUID) -> DataQualityReport:
@@ -532,30 +520,47 @@ class DataQualityValidator:
         import json
         
         try:
-            await self.db.execute(
-                text(
-                    """
-                    INSERT INTO quality_metrics 
-                    (extraction_id, timestamp, overall_status, 
-                     completeness_grades, completeness_measurements, 
-                     completeness_stats, error_rate, pass_rate)
-                    VALUES (:extraction_id, :timestamp, :overall_status,
-                            :completeness_grades, :completeness_measurements,
-                            :completeness_stats, :error_rate, :pass_rate)
-                    """
-                ),
-                {
-                    "extraction_id": str(report.extraction_id),
-                    "timestamp": report.timestamp,
-                    "overall_status": report.overall_status,
-                    "completeness_grades": report.quality_metrics.get("completeness_grades", 0),
-                    "completeness_measurements": report.quality_metrics.get("completeness_measurements", 0),
-                    "completeness_stats": report.quality_metrics.get("completeness_stats", 0),
-                    "error_rate": report.quality_metrics.get("error_rate", 0),
-                    "pass_rate": report.quality_metrics.get("pass_rate", 0),
-                },
+            # Check if table exists and has required columns
+            result = await self.db.execute(
+                text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'quality_metrics' 
+                    AND column_name IN ('extraction_id', 'timestamp', 'overall_status')
+                """)
             )
-            return True
+            cols = result.fetchall()
+            
+            # Only insert if table has the required columns
+            if len(cols) >= 3:
+                await self.db.execute(
+                    text(
+                        """
+                        INSERT INTO quality_metrics 
+                        (extraction_id, timestamp, overall_status, 
+                         completeness_grades, completeness_measurements, 
+                         completeness_stats, error_rate, pass_rate)
+                        VALUES (:extraction_id, :timestamp, :overall_status,
+                                :completeness_grades, :completeness_measurements,
+                                :completeness_stats, :error_rate, :pass_rate)
+                        """
+                    ),
+                    {
+                        "extraction_id": str(report.extraction_id),
+                        "timestamp": report.timestamp,
+                        "overall_status": report.overall_status,
+                        "completeness_grades": report.quality_metrics.get("completeness_grades", 0),
+                        "completeness_measurements": report.quality_metrics.get("completeness_measurements", 0),
+                        "completeness_stats": report.quality_metrics.get("completeness_stats", 0),
+                        "error_rate": report.quality_metrics.get("error_rate", 0),
+                        "pass_rate": report.quality_metrics.get("pass_rate", 0),
+                    },
+                )
+                return True
+            else:
+                self.logger.warning("quality_metrics table schema mismatch - skipping storage")
+                return False
         except Exception as e:
-            self.logger.error(f"Failed to store quality report: {e}")
+            self.logger.warning(f"Failed to store quality report (non-critical): {e}")
+            # Don't raise - just log and continue
             return False

@@ -33,7 +33,7 @@ from datetime import datetime
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data_pipeline.transformations.base_transformer import (
+from .base_transformer import (
     BaseTransformer,
     TransformationResult,
     FieldChange,

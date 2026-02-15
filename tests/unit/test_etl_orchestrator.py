@@ -306,8 +306,8 @@ class TestETLOrchestrator:
 
     async def test_merge_phase_execution(self, orchestrator, extraction_id):
         """Test merge phase execution."""
-        mock_result = AsyncMock()
-        mock_result.fetchone = AsyncMock(return_value=(500, 450, 350, 400))
+        mock_result = MagicMock()
+        mock_result.fetchone = MagicMock(return_value=(500, 450, 350, 400))
         orchestrator.db.execute = AsyncMock(return_value=mock_result)
 
         execution = ETLExecution(
