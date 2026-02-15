@@ -34,7 +34,7 @@ import time
 sys.path.insert(0, '/home/parrot/code/draft-queen/src')
 
 from sqlalchemy import text, select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 # Configure logging
 logging.basicConfig(
@@ -295,14 +295,14 @@ class RealDataE2ETestRunner:
             
             from data_pipeline.etl_orchestrator import ETLOrchestrator
             
-            orchestrator = ETLOrchestrator(db=self.engine)
+            orchestrator = ETLOrchestrator(db=session)
             result = await orchestrator.execute_extraction(
                 extraction_id=self.extraction_id
             )
             
             logger.info(f"✓ Pipeline execution completed")
-            self.test_results['pipeline_status'] = result.status.value if result.status else 'unknown'
-            self.test_results['pipeline_duration'] = (result.ended_at - result.started_at).total_seconds() if result.ended_at else 0
+            self.test_results['pipeline_status'] = result.overall_status if result.overall_status else 'unknown'
+            self.test_results['pipeline_duration'] = (result.completed_at - result.started_at).total_seconds() if result.completed_at else 0
             
         except Exception as e:
             logger.error(f"✗ Failed to run orchestrator: {e}")
@@ -313,37 +313,43 @@ class RealDataE2ETestRunner:
         try:
             logger.info("✓ Verifying results in database...")
             
-            # Query prospect_core
-            core_result = await session.execute(
-                text("SELECT COUNT(*) FROM prospect_core")
-            )
-            core_count = core_result.scalar() or 0
-            self.test_results['prospect_core_count'] = core_count
-            logger.info(f"  - prospect_core records: {core_count}")
+            # Commit current session to ensure all changes are persisted
+            await session.commit()
             
-            # Query prospect_grades
-            grades_result = await session.execute(
-                text("SELECT COUNT(*) FROM prospect_grades")
-            )
-            grades_count = grades_result.scalar() or 0
-            self.test_results['prospect_grades_count'] = grades_count
-            logger.info(f"  - prospect_grades records: {grades_count}")
-            
-            # Query prospect_college_stats
-            stats_result = await session.execute(
-                text("SELECT COUNT(*) FROM prospect_college_stats")
-            )
-            stats_count = stats_result.scalar() or 0
-            self.test_results['prospect_college_stats_count'] = stats_count
-            logger.info(f"  - prospect_college_stats records: {stats_count}")
-            
-            # Query data_lineage
-            lineage_result = await session.execute(
-                text(f"SELECT COUNT(*) FROM data_lineage WHERE extraction_id = '{self.extraction_id}'")
-            )
-            lineage_count = lineage_result.scalar() or 0
-            self.test_results['data_lineage_count'] = lineage_count
-            logger.info(f"  - data_lineage records: {lineage_count}")
+            # Create new session for verification
+            SessionLocal = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+            async with SessionLocal() as verify_session:
+                # Query prospect_core
+                core_result = await verify_session.execute(
+                    text("SELECT COUNT(*) FROM prospect_core")
+                )
+                core_count = core_result.scalar() or 0
+                self.test_results['prospect_core_count'] = core_count
+                logger.info(f"  - prospect_core records: {core_count}")
+                
+                # Query prospect_grades
+                grades_result = await verify_session.execute(
+                    text("SELECT COUNT(*) FROM prospect_grades")
+                )
+                grades_count = grades_result.scalar() or 0
+                self.test_results['prospect_grades_count'] = grades_count
+                logger.info(f"  - prospect_grades records: {grades_count}")
+                
+                # Query prospect_college_stats
+                stats_result = await verify_session.execute(
+                    text("SELECT COUNT(*) FROM prospect_college_stats")
+                )
+                stats_count = stats_result.scalar() or 0
+                self.test_results['prospect_college_stats_count'] = stats_count
+                logger.info(f"  - prospect_college_stats records: {stats_count}")
+                
+                # Query data_lineage
+                lineage_result = await verify_session.execute(
+                    text(f"SELECT COUNT(*) FROM data_lineage WHERE extraction_id = '{self.extraction_id}'")
+                )
+                lineage_count = lineage_result.scalar() or 0
+                self.test_results['data_lineage_count'] = lineage_count
+                logger.info(f"  - data_lineage records: {lineage_count}")
             
         except Exception as e:
             logger.warning(f"Could not fully verify results: {e}")
@@ -362,8 +368,11 @@ class RealDataE2ETestRunner:
             self.extraction_id = uuid4()
             logger.info(f"Extraction ID: {self.extraction_id}")
             
+            # Create async session factory
+            SessionLocal = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+            
             # Create async session
-            async with AsyncSession(self.engine) as session:
+            async with SessionLocal() as session:
                 
                 # Scrape real data
                 logger.info("\n📡 PHASE 1: Scraping Real Data")
