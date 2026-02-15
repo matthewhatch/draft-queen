@@ -33,6 +33,7 @@ numpy = "1.26.2"
 # HTTP Client
 requests = "2.31.0"
 httpx = "0.25.2"
+aiohttp = "^3.9.0"
 
 # Task Scheduling
 apscheduler = "3.10.4"
