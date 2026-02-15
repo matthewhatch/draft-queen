@@ -15,8 +15,10 @@ import sys
 
 async def main():
     """Run PFF scraper example"""
-    # Add project to path
-    sys.path.insert(0, '/home/parrot/code/draft-queen')
+    # Add src to path
+    from pathlib import Path
+    project_root = Path(__file__).parent.parent
+    sys.path.insert(0, str(project_root / "src"))
 
     from data_pipeline.scrapers.pff_scraper import PFFScraper
 

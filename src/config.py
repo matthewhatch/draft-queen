@@ -102,8 +102,8 @@ class Settings(BaseSettings):
             def __init__(self, settings):
                 self.enabled = settings.scheduler_enabled
                 self.timezone = "UTC"
-                self.load_schedule_hour = 2
-                self.load_schedule_minute = 0
+                self.pff_schedule_hour = 2
+                self.pff_schedule_minute = 0
                 self.quality_schedule_hour = 2
                 self.quality_schedule_minute = 30
         

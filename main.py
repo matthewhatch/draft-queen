@@ -5,6 +5,7 @@ import logging.handlers
 import os
 import sys
 from pathlib import Path
+import asyncio
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -75,14 +76,13 @@ class PipelineScheduler:
             logger.info("Scheduler is disabled")
             return
         
-        # Schedule daily NFL.com data load
+        # Schedule PFF scrape every 5 minutes (change 'interval' and 'minutes' to adjust)
         self.scheduler.add_job(
-            self._daily_load_job,
-            'cron',
-            hour=settings.scheduler.load_schedule_hour,
-            minute=settings.scheduler.load_schedule_minute,
-            id='daily_load',
-            name='Daily NFL.com Data Load',
+            self._daily_pff_job,
+            'interval',
+            minutes=5,
+            id='daily_pff',
+            name='PFF.com Draft Big Board Scrape (Every 5 minutes)',
             replace_existing=True,
         )
         
@@ -98,26 +98,30 @@ class PipelineScheduler:
         )
         
         logger.info(f"Scheduler jobs configured:")
-        logger.info(f"  - Daily load: {settings.scheduler.load_schedule_hour:02d}:{settings.scheduler.load_schedule_minute:02d} UTC")
+        logger.info(f"  - PFF scrape: Every 5 minutes")
         logger.info(f"  - Quality checks: {settings.scheduler.quality_schedule_hour:02d}:{settings.scheduler.quality_schedule_minute:02d} UTC")
     
-    def _daily_load_job(self):
-        """Daily data load job."""
-        logger.info(f"[{datetime.utcnow()}] Starting daily NFL.com data load job")
+    def _daily_pff_job(self):
+        """Daily PFF.com scrape job."""
+        logger.info(f"[{datetime.utcnow()}] Starting daily PFF.com Draft Big Board scrape")
         
         try:
-            from data_pipeline.loaders import load_nfl_com_data
+            from data_pipeline.scrapers.pff_scraper import PFFScraper
             
-            result = load_nfl_com_data()
+            scraper = PFFScraper(season=2026)
+            prospects = asyncio.run(scraper.scrape_all_pages())
             logger.info(
-                f"Daily load completed: "
-                f"Inserted: {result['total_inserted']}, "
-                f"Updated: {result['total_updated']}, "
-                f"Failed: {result['total_failed']}"
+                f"PFF scrape completed: "
+                f"Found {len(prospects)} prospects"
             )
+            
+            # Log next run time
+            next_job = self.scheduler.get_job('daily_pff')
+            if next_job:
+                logger.info(f"Next PFF scrape: {next_job.next_run_time}")
         
         except Exception as e:
-            logger.error(f"Daily load job failed: {e}", exc_info=True)
+            logger.error(f"PFF scrape job failed: {e}", exc_info=True)
             # TODO: Send alert email
     
     def _daily_quality_job(self):
@@ -133,6 +137,11 @@ class PipelineScheduler:
                 f"{result['checks_passed']} passed, "
                 f"{result['checks_failed']} failed"
             )
+            
+            # Log next run time
+            next_job = self.scheduler.get_job('daily_quality')
+            if next_job:
+                logger.info(f"Next quality check: {next_job.next_run_time}")
         
         except Exception as e:
             logger.error(f"Quality check job failed: {e}", exc_info=True)

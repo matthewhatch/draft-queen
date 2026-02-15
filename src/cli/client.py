@@ -11,15 +11,17 @@ import yaml
 class APIClient:
     """Client for communicating with draft-queen backend API."""
     
-    def __init__(self, base_url: str = "http://localhost:8000", auth_token: Optional[str] = None):
+    def __init__(self, base_url: str = "http://localhost:8000", auth_token: Optional[str] = None, api_key: Optional[str] = None):
         """Initialize API client.
         
         Args:
             base_url: Base URL for API endpoint
             auth_token: Optional authentication token
+            api_key: Optional admin API key for protected endpoints
         """
         self.base_url = base_url.rstrip("/")
         self.auth_token = auth_token or self._get_stored_token()
+        self.api_key = api_key or self._get_stored_api_key()
         self.session = requests.Session()
         self._update_headers()
     
@@ -33,11 +35,40 @@ class APIClient:
             self.session.headers.update({
                 "Authorization": f"Bearer {self.auth_token}"
             })
+        if self.api_key:
+            self.session.headers.update({
+                "X-API-Key": self.api_key
+            })
     
     def _get_stored_token(self) -> Optional[str]:
         """Retrieve stored auth token from system keyring."""
         try:
             return keyring.get_password("draft-queen", "api_token")
+        except Exception:
+            return None
+    
+    def _get_stored_api_key(self) -> Optional[str]:
+        """Retrieve stored admin API key from .env or environment."""
+        try:
+            import os
+            from pathlib import Path
+            
+            # Try loading from .env first
+            try:
+                from dotenv import load_dotenv
+                env_path = Path(__file__).parent.parent.parent / ".env"
+                if env_path.exists():
+                    load_dotenv(env_path)
+            except ImportError:
+                pass
+            
+            # Try environment variable
+            key = os.environ.get("ADMIN_API_KEY")
+            if key:
+                return key
+            
+            # Try keyring
+            return keyring.get_password("draft-queen", "admin_api_key")
         except Exception:
             return None
     
